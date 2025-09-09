@@ -1,88 +1,90 @@
 
-"use client";
+'use client';
 
-import { useState, useCallback } from "react";
-import { ArrowRightLeft, Loader2 } from "lucide-react";
-import { translateText } from "@/ai/flows/translate-text";
-// Import the new IndexedDB helper functions.
-import { getTranslationFromDb, saveTranslationToDb } from "@/lib/db";
-import { AngkorWatIcon } from "@/components/icons/angkor-wat-icon";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useEffect } from 'react';
+import { ArrowRightLeft, Loader2 } from 'lucide-react';
+import { translateText } from '@/ai/flows/translate-text';
+import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
+import { AngkorWatIcon } from '@/components/icons/angkor-wat-icon';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { seedDatabaseIfNeeded } from '@/lib/seeder';
 
 const languages = [
-  { value: "en", label: "English" },
-  { value: "km", label: "Khmer" },
+  { value: 'en', label: 'English' },
+  { value: 'km', label: 'Khmer' },
 ];
 
-// This function converts the input text to lowercase and removes leading/trailing spaces.
-// This ensures that "  Hello" and "hello" are treated as the same for caching purposes.
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
 export default function Home() {
-  const [sourceLang, setSourceLang] = useState<"en" | "km">("en");
-  const [targetLang, setTargetLang] = useState<"en" | "km">("km");
-  const [inputText, setInputText] = useState("");
-  const [outputText, setOutputText] = useState("");
+  const [sourceLang, setSourceLang] = useState<'en' | 'km'>('en');
+  const [targetLang, setTargetLang] = useState<'en' | 'km'>('km');
+  const [inputText, setInputText] = useState('');
+  const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // --- NEW: This useEffect hook runs the database seeder ---
+  // It runs only once when the component is first mounted on the client.
+  useEffect(() => {
+    // Call the function that handles the seeding logic.
+    // This function will itself check if seeding is needed, so it's safe to call on every page load.
+    seedDatabaseIfNeeded();
+  }, []); // The empty dependency array [] ensures this runs only once.
+
   const handleTranslate = useCallback(async () => {
-    // Exit early if there's no text to translate.
     const trimmedInput = inputText.trim();
     if (!trimmedInput) return;
 
     setIsLoading(true);
-    setOutputText("");
+    setOutputText('');
 
-    // Normalize the input text for consistent caching.
     const normalizedInput = normalizeText(trimmedInput);
 
     try {
-      // --- This is the new Offline-First Caching Flow ---
-      // STEP 1: Check the local browser database (IndexedDB) first.
-      // This is the fastest check and works entirely offline.
-      console.log("CACHE CHECK: Checking IndexedDB...");
-      const cached = await getTranslationFromDb(normalizedInput, sourceLang, targetLang);
+      console.log('CACHE CHECK: Checking IndexedDB...');
+      const cached = await getTranslationFromDb(
+        normalizedInput,
+        sourceLang,
+        targetLang
+      );
       if (cached) {
-        // If a translation is found locally, display it and we're done. No network needed.
         setOutputText(cached);
         setIsLoading(false);
-        console.log("CACHE HIT: Found translation in IndexedDB.");
+        console.log('CACHE HIT: Found translation in IndexedDB.');
         return;
       }
 
-      console.log("CACHE MISS: Not in IndexedDB. Checking server (Firestore/API)...");
-      // STEP 2: If not in IndexedDB, call the server-side flow.
-      // This flow will first check Firestore (the shared cache), and if it's not there,
-      // it will finally call the AI translation API.
+      console.log(
+        'CACHE MISS: Not in IndexedDB. Checking server (Firestore/API)...'
+      );
+
       const result = await translateText({
-        text: trimmedInput, // Send original trimmed text to the server
+        text: trimmedInput,
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
       });
       setOutputText(result.translatedText);
 
-      // STEP 3: Save the new translation to the local database for next time.
-      // This "populates" our offline cache.
-      console.log("CACHE WRITE: Saving new translation to IndexedDB.");
+      console.log('CACHE WRITE: Saving new translation to IndexedDB.');
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,
@@ -90,21 +92,18 @@ export default function Home() {
         result.translatedText
       );
     } catch (error) {
-      // If any step in the process fails, show an error message.
-      console.error("Translation error:", error);
+      console.error('Translation error:', error);
       toast({
-        title: "Translation Failed",
+        title: 'Translation Failed',
         description:
-          "An error occurred while translating the text. Please try again.",
-        variant: "destructive",
+          'An error occurred while translating the text. Please try again.',
+        variant: 'destructive',
       });
     } finally {
-      // Ensure the loading spinner is turned off, no matter what.
       setIsLoading(false);
     }
   }, [inputText, sourceLang, targetLang, toast]);
 
-  // This function swaps the source and target languages, and the input and output text.
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
@@ -130,7 +129,7 @@ export default function Home() {
               </Label>
               <Select
                 value={sourceLang}
-                onValueChange={(value) => setSourceLang(value as "en" | "km")}
+                onValueChange={(value) => setSourceLang(value as 'en' | 'km')}
               >
                 <SelectTrigger id="source-lang" className="w-full">
                   <SelectValue placeholder="Select source language" />
@@ -161,7 +160,7 @@ export default function Home() {
               </Label>
               <Select
                 value={targetLang}
-                onValueChange={(value) => setTargetLang(value as "en" | "km")}
+                onValueChange={(value) => setTargetLang(value as 'en' | 'km')}
               >
                 <SelectTrigger id="target-lang" className="w-full">
                   <SelectValue placeholder="Select target language" />
@@ -215,7 +214,7 @@ export default function Home() {
                 Translating
               </>
             ) : (
-              "Translate"
+              'Translate'
             )}
           </Button>
         </CardFooter>
