@@ -115,8 +115,6 @@ export default function Home() {
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
-    setInputText(outputText);
-    setOutputText(inputText);
   };
 
   return (
