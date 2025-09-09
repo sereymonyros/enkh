@@ -1,8 +1,10 @@
+
 "use client";
 
 import { useState, useCallback } from "react";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
 import { translateText } from "@/ai/flows/translate-text";
+// Import the new IndexedDB helper functions.
 import { getTranslationFromDb, saveTranslationToDb } from "@/lib/db";
 import { AngkorWatIcon } from "@/components/icons/angkor-wat-icon";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,8 @@ const languages = [
   { value: "km", label: "Khmer" },
 ];
 
+// This function converts the input text to lowercase and removes leading/trailing spaces.
+// This ensures that "  Hello" and "hello" are treated as the same for caching purposes.
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
@@ -41,32 +45,44 @@ export default function Home() {
   const { toast } = useToast();
 
   const handleTranslate = useCallback(async () => {
+    // Exit early if there's no text to translate.
     const trimmedInput = inputText.trim();
     if (!trimmedInput) return;
 
     setIsLoading(true);
     setOutputText("");
 
+    // Normalize the input text for consistent caching.
     const normalizedInput = normalizeText(trimmedInput);
 
     try {
-      // 1. Check IndexedDB first
+      // --- This is the new Offline-First Caching Flow ---
+      // STEP 1: Check the local browser database (IndexedDB) first.
+      // This is the fastest check and works entirely offline.
+      console.log("CACHE CHECK: Checking IndexedDB...");
       const cached = await getTranslationFromDb(normalizedInput, sourceLang, targetLang);
       if (cached) {
+        // If a translation is found locally, display it and we're done. No network needed.
         setOutputText(cached);
         setIsLoading(false);
+        console.log("CACHE HIT: Found translation in IndexedDB.");
         return;
       }
 
-      // 2. If not in IndexedDB, call the server action
+      console.log("CACHE MISS: Not in IndexedDB. Checking server (Firestore/API)...");
+      // STEP 2: If not in IndexedDB, call the server-side flow.
+      // This flow will first check Firestore (the shared cache), and if it's not there,
+      // it will finally call the AI translation API.
       const result = await translateText({
-        text: trimmedInput, // Send original trimmed text
+        text: trimmedInput, // Send original trimmed text to the server
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
       });
       setOutputText(result.translatedText);
 
-      // 3. Save the new translation to IndexedDB
+      // STEP 3: Save the new translation to the local database for next time.
+      // This "populates" our offline cache.
+      console.log("CACHE WRITE: Saving new translation to IndexedDB.");
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,
@@ -74,6 +90,7 @@ export default function Home() {
         result.translatedText
       );
     } catch (error) {
+      // If any step in the process fails, show an error message.
       console.error("Translation error:", error);
       toast({
         title: "Translation Failed",
@@ -82,10 +99,12 @@ export default function Home() {
         variant: "destructive",
       });
     } finally {
+      // Ensure the loading spinner is turned off, no matter what.
       setIsLoading(false);
     }
   }, [inputText, sourceLang, targetLang, toast]);
 
+  // This function swaps the source and target languages, and the input and output text.
   const handleSwapLanguages = () => {
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
