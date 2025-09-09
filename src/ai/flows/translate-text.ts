@@ -18,6 +18,7 @@ import {
   getDocs,
   addDoc,
   limit,
+  serverTimestamp,
 } from 'firebase/firestore';
 import {db} from '@/lib/firebase';
 
@@ -97,12 +98,13 @@ const translateTextFlow = ai.defineFlow(
     console.log('      ✅ API SUCCESS: Received translation from AI.');
     
     // --- CACHE WRITE: POPULATE FIRESTORE FOR SHARED USE ---
-    console.log('   -> 3c. FIRESTORE WRITE: Saving new translation to Firestore.');
+    console.log('   -> 3c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
     await addDoc(translationsCollection, {
       normalizedText: normalizedText,
       translatedText: output.translatedText,
       sourceLanguage: input.sourceLanguage,
       targetLanguage: input.targetLanguage,
+      createdAt: serverTimestamp(),
     });
 
     return output;
