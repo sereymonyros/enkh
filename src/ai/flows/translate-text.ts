@@ -93,7 +93,6 @@ const translateTextFlow = ai.defineFlow(
     
     // Populate the cache
     await addDoc(translationsCollection, {
-      originalText: input.text,
       normalizedText: normalizedText,
       translatedText: output.translatedText,
       sourceLanguage: input.sourceLanguage,
