@@ -6,7 +6,7 @@
  *
  * - translateText - A function that translates text between English and Khmer.
  * - TranslateTextInput - The input type for the translateText function.
- * - TranslateTextOutput - The return type for the translateText function.
+ * - TranslateTextOutput - The return type for the translate-tsext function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -17,12 +17,16 @@ import {
   where,
   getDocs,
   addDoc,
+  updateDoc,
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
 import {db} from '@/lib/firebase';
 
 const translationsCollection = collection(db, 'translations');
+
+// Define a constant for the cache lifetime (30 days in milliseconds).
+const CACHE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const TranslateTextInputSchema = z.object({
   text: z.string().describe('The text to translate.'),
@@ -69,6 +73,7 @@ const translateTextFlow = ai.defineFlow(
   },
   async input => {
     const normalizedText = normalizeText(input.text);
+    let staleDocId: string | null = null;
 
     // --- LAYER 3: CHECK FIRESTORE (SHARED CACHE) ---
     console.log('   -> 3a. FIRESTORE CHECK: Checking for translation in Firestore...');
@@ -82,12 +87,27 @@ const translateTextFlow = ai.defineFlow(
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-      console.log('      ✅ FIRESTORE HIT: Found in Firestore. Flow complete.');
-      const doc = querySnapshot.docs[0];
-      return {translatedText: doc.data().translatedText};
-    }
-    console.log('      ❌ FIRESTORE MISS: Not found in Firestore.');
+      const docSnap = querySnapshot.docs[0];
+      const data = docSnap.data();
+      const createdAt = data.createdAt?.toDate(); // Convert Firestore Timestamp to JS Date
 
+      if (createdAt) {
+        const age = Date.now() - createdAt.getTime();
+        if (age < CACHE_STALE_MS) {
+          console.log('      ✅ FIRESTORE HIT (FRESH): Found fresh translation in Firestore. Flow complete.');
+          return {translatedText: data.translatedText};
+        } else {
+          console.log('      ⚠️ FIRESTORE HIT (STALE): Translation is older than 30 days. Will refresh.');
+          staleDocId = docSnap.id; // Mark this document to be updated instead of creating a new one.
+        }
+      } else {
+        // If there's no timestamp, treat it as fresh but log a warning.
+        console.log('      ✅ FIRESTORE HIT (NO TIMESTAMP): Found translation but it has no timestamp.');
+        return {translatedText: data.translatedText};
+      }
+    } else {
+      console.log('      ❌ FIRESTORE MISS: Not found in Firestore.');
+    }
 
     // --- LAYER 4: CALL AI API (FINAL RESORT) ---
     console.log('   -> 3b. API CALL: Calling the AI translation API...');
@@ -96,16 +116,27 @@ const translateTextFlow = ai.defineFlow(
       throw new Error('Translation API returned no output.');
     }
     console.log('      ✅ API SUCCESS: Received translation from AI.');
-    
-    // --- CACHE WRITE: POPULATE FIRESTORE FOR SHARED USE ---
-    console.log('   -> 3c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
-    await addDoc(translationsCollection, {
-      normalizedText: normalizedText,
-      translatedText: output.translatedText,
-      sourceLanguage: input.sourceLanguage,
-      targetLanguage: input.targetLanguage,
-      createdAt: serverTimestamp(),
-    });
+
+    // --- CACHE WRITE: POPULATE OR UPDATE FIRESTORE FOR SHARED USE ---
+    if (staleDocId) {
+      // If we are refreshing a stale document, UPDATE the existing one.
+      console.log('   -> 3c. FIRESTORE UPDATE: Updating stale translation in Firestore.');
+      const docRef = docSnap(translationsCollection, staleDocId);
+      await updateDoc(docRef, {
+        translatedText: output.translatedText,
+        createdAt: serverTimestamp(), // Update the timestamp to now.
+      });
+    } else {
+      // If this is a completely new translation, ADD a new document.
+      console.log('   -> 3c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
+      await addDoc(translationsCollection, {
+        normalizedText: normalizedText,
+        translatedText: output.translatedText,
+        sourceLanguage: input.sourceLanguage,
+        targetLanguage: input.targetLanguage,
+        createdAt: serverTimestamp(),
+      });
+    }
 
     return output;
   }
