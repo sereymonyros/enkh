@@ -18,6 +18,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  doc,
   limit,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -121,7 +122,7 @@ const translateTextFlow = ai.defineFlow(
     if (staleDocId) {
       // If we are refreshing a stale document, UPDATE the existing one.
       console.log('   -> 3c. FIRESTORE UPDATE: Updating stale translation in Firestore.');
-      const docRef = docSnap(translationsCollection, staleDocId);
+      const docRef = doc(translationsCollection, staleDocId);
       await updateDoc(docRef, {
         translatedText: output.translatedText,
         createdAt: serverTimestamp(), // Update the timestamp to now.
