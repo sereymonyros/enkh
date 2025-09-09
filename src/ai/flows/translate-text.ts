@@ -81,16 +81,18 @@ const translateTextFlow = ai.defineFlow(
 
     // Cache miss, call the API
     const {output} = await prompt(input);
-    if (output) {
-      // Populate the cache
-      await addDoc(translationsCollection, {
-        originalText: input.text,
-        translatedText: output.translatedText,
-        sourceLanguage: input.sourceLanguage,
-        targetLanguage: input.targetLanguage,
-      });
+    if (!output) {
+      throw new Error('Translation API returned no output.');
     }
+    
+    // Populate the cache
+    await addDoc(translationsCollection, {
+      originalText: input.text,
+      translatedText: output.translatedText,
+      sourceLanguage: input.sourceLanguage,
+      targetLanguage: input.targetLanguage,
+    });
 
-    return output!;
+    return output;
   }
 );
