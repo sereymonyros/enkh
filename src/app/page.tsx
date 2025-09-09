@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { ArrowRightLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
+import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
 import { AngkorWatIcon } from '@/components/icons/angkor-wat-icon';
 import { Button } from '@/components/ui/button';
@@ -12,23 +13,11 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
-
-const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'km', label: 'Khmer' },
-];
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
 const LOCAL_CACHE_STALE_MS = process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS
@@ -38,8 +27,6 @@ const normalizeText = (text: string) => {
 };
 
 export default function Home() {
-  const [sourceLang, setSourceLang] = useState<'en' | 'km'>('en');
-  const [targetLang, setTargetLang] = useState<'en' | 'km'>('km');
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,11 +43,30 @@ export default function Home() {
     setIsLoading(true);
     setOutputText('');
 
-    const normalizedInput = normalizeText(trimmedInput);
-
     try {
-      // --- LAYER 1: CHECK INDEXEDDB (LOCAL CACHE) ---
-      console.log('1. LOCAL CHECK: Checking for translation in IndexedDB...');
+      // --- Step 1: Detect the language ---
+      console.log('1. DETECT: Detecting input language...');
+      const detectionResult = await detectLanguage({ text: trimmedInput });
+      const detectedLang = detectionResult.language;
+
+      if (detectedLang === 'unknown') {
+        toast({
+          title: 'Language Not Detected',
+          description: 'Could not determine the input language. Please use English or Khmer.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+      console.log(`   ✅ DETECTED: Language is '${detectedLang}'.`);
+
+
+      const sourceLang = detectedLang;
+      const targetLang = sourceLang === 'en' ? 'km' : 'en';
+      const normalizedInput = normalizeText(trimmedInput);
+
+      // --- LAYER 2: CHECK INDEXEDDB (LOCAL CACHE) ---
+      console.log('2. LOCAL CHECK: Checking for translation in IndexedDB...');
       const cached = await getTranslationFromDb(
         normalizedInput,
         sourceLang,
@@ -82,8 +88,8 @@ export default function Home() {
       }
 
 
-      // --- LAYER 2: CALL SERVER (FIRESTORE/API) ---
-      console.log('2. SERVER CHECK: Calling server-side flow...');
+      // --- LAYER 3: CALL SERVER (FIRESTORE/API) ---
+      console.log('3. SERVER CHECK: Calling server-side flow...');
       const result = await translateText({
         text: trimmedInput,
         sourceLanguage: sourceLang,
@@ -94,14 +100,14 @@ export default function Home() {
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
       console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
       const normalizedTranslatedText = normalizeText(result.translatedText);
-      // Save the forward translation (e.g., EN -> KM)
+      // Save the forward translation
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,
         targetLang,
         result.translatedText
       );
-      // Save the reverse translation (e.g., KM -> EN)
+      // Save the reverse translation
       await saveTranslationToDb(
         normalizedTranslatedText,
         targetLang,
@@ -120,12 +126,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, sourceLang, targetLang, toast]);
-
-  const handleSwapLanguages = () => {
-    setSourceLang(targetLang);
-    setTargetLang(sourceLang);
-  };
+  }, [inputText, toast]);
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8 font-body">
@@ -138,59 +139,9 @@ export default function Home() {
 
       <Card className="w-full max-w-4xl shadow-2xl rounded-xl">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex-1 w-full">
-              <Label htmlFor="source-lang" className="text-muted-foreground">
-                From
-              </Label>
-              <Select
-                value={sourceLang}
-                onValueChange={(value) => setSourceLang(value as 'en' | 'km')}
-              >
-                <SelectTrigger id="source-lang" className="w-full">
-                  <SelectValue placeholder="Select source language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="mt-4 sm:mt-5 self-center"
-              onClick={handleSwapLanguages}
-              aria-label="Swap languages"
-            >
-              <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
-            </Button>
-
-            <div className="flex-1 w-full">
-              <Label htmlFor="target-lang" className="text-muted-foreground">
-                To
-              </Label>
-              <Select
-                value={targetLang}
-                onValueChange={(value) => setTargetLang(value as 'en' | 'km')}
-              >
-                <SelectTrigger id="target-lang" className="w-full">
-                  <SelectValue placeholder="Select target language" />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <CardTitle className="text-center text-muted-foreground font-normal">
+                Translate between English and Khmer
+            </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 gap-4">
