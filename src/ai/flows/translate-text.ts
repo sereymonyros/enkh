@@ -12,6 +12,17 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  limit,
+} from 'firebase/firestore';
+import {db} from '@/lib/firebase';
+
+const translationsCollection = collection(db, 'translations');
 
 const TranslateTextInputSchema = z.object({
   text: z.string().describe('The text to translate.'),
@@ -53,7 +64,33 @@ const translateTextFlow = ai.defineFlow(
     outputSchema: TranslateTextOutputSchema,
   },
   async input => {
+    // Cache lookup
+    const q = query(
+      translationsCollection,
+      where('originalText', '==', input.text),
+      where('sourceLanguage', '==', input.sourceLanguage),
+      where('targetLanguage', '==', input.targetLanguage),
+      limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return {translatedText: doc.data().translatedText};
+    }
+
+    // Cache miss, call the API
     const {output} = await prompt(input);
+    if (output) {
+      // Populate the cache
+      await addDoc(translationsCollection, {
+        originalText: input.text,
+        translatedText: output.translatedText,
+        sourceLanguage: input.sourceLanguage,
+        targetLanguage: input.targetLanguage,
+      });
+    }
+
     return output!;
   }
 );
