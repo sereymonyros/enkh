@@ -31,7 +31,7 @@ const languages = [
 ];
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
-const LOCAL_CACHE_STALE_MS = 24 * 60 * 60 * 1000;
+const LOCAL_CACHE_STALE_MS = process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS
 
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
