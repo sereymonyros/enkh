@@ -73,11 +73,18 @@ const translateTextFlow = ai.defineFlow(
     outputSchema: TranslateTextOutputSchema,
   },
   async input => {
+    // 1. NORMALIZE and VALIDATE INPUT (Security)
+    // The server must be the source of truth for normalization.
     const normalizedText = normalizeText(input.text);
+    if (!normalizedText) {
+      // Handle empty input gracefully.
+      return { translatedText: '' };
+    }
+
     let staleDocId: string | null = null;
 
-    // --- LAYER 3: CHECK FIRESTORE (SHARED CACHE) ---
-    console.log('   -> 3a. FIRESTORE CHECK: Checking for translation in Firestore...');
+    // 2. CHECK SHARED CACHE (FIRESTORE)
+    console.log('   -> 2a. FIRESTORE CHECK: Checking for translation in Firestore...');
     const q = query(
       translationsCollection,
       where('normalizedText', '==', normalizedText),
@@ -94,34 +101,38 @@ const translateTextFlow = ai.defineFlow(
 
       if (createdAt) {
         const age = Date.now() - createdAt.getTime();
+        // If the cache entry is fresh, return it immediately.
         if (age < CACHE_STALE_MS) {
           console.log('      ✅ FIRESTORE HIT (FRESH): Found fresh translation in Firestore. Flow complete.');
           return {translatedText: data.translatedText};
         } else {
+          // If the entry is stale, mark it for update instead of creating a new one.
           console.log('      ⚠️ FIRESTORE HIT (STALE): Translation is older than 30 days. Will refresh.');
-          staleDocId = docSnap.id; // Mark this document to be updated instead of creating a new one.
+          staleDocId = docSnap.id;
         }
       } else {
-        // If there's no timestamp, treat it as fresh but log a warning.
-        console.log('      ✅ FIRESTORE HIT (NO TIMESTAMP): Found translation but it has no timestamp.');
-        return {translatedText: data.translatedText};
+        // If there's no timestamp, treat it as fresh but mark for update to add a timestamp.
+        console.log('      ⚠️ FIRESTORE HIT (NO TIMESTAMP): Found translation but it has no timestamp. Will refresh.');
+        staleDocId = docSnap.id;
       }
     } else {
       console.log('      ❌ FIRESTORE MISS: Not found in Firestore.');
     }
 
-    // --- LAYER 4: CALL AI API (FINAL RESORT) ---
-    console.log('   -> 3b. API CALL: Calling the AI translation API...');
+    // 3. FETCH FROM SOURCE OF TRUTH (AI API)
+    // This part only runs if the cache is a MISS or STALE.
+    console.log('   -> 2b. API CALL: Calling the AI translation API...');
     const {output} = await prompt({...input, text: normalizedText});
     if (!output) {
       throw new Error('Translation API returned no output.');
     }
     console.log('      ✅ API SUCCESS: Received translation from AI.');
 
-    // --- CACHE WRITE: POPULATE OR UPDATE FIRESTORE FOR SHARED USE ---
+    // 4. POPULATE CACHE
+    // Write the fresh result back to Firestore.
     if (staleDocId) {
       // If we are refreshing a stale document, UPDATE the existing one.
-      console.log('   -> 3c. FIRESTORE UPDATE: Updating stale translation in Firestore.');
+      console.log('   -> 2c. FIRESTORE UPDATE: Updating stale translation in Firestore.');
       const docRef = doc(translationsCollection, staleDocId);
       await updateDoc(docRef, {
         translatedText: output.translatedText,
@@ -129,7 +140,7 @@ const translateTextFlow = ai.defineFlow(
       });
     } else {
       // If this is a completely new translation, ADD a new document.
-      console.log('   -> 3c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
+      console.log('   -> 2c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
       await addDoc(translationsCollection, {
         normalizedText: normalizedText,
         translatedText: output.translatedText,
@@ -139,6 +150,7 @@ const translateTextFlow = ai.defineFlow(
       });
     }
 
+    // 5. RETURN RESULT
     return output;
   }
 );
