@@ -30,6 +30,9 @@ const languages = [
   { value: 'km', label: 'Khmer' },
 ];
 
+// Define a constant for the local cache lifetime (1 day in milliseconds).
+const LOCAL_CACHE_STALE_MS = 24 * 60 * 60 * 1000;
+
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
@@ -63,13 +66,21 @@ export default function Home() {
         sourceLang,
         targetLang
       );
+
       if (cached) {
-        setOutputText(cached);
-        setIsLoading(false);
-        console.log('   ✅ LOCAL HIT: Found in IndexedDB. Flow complete.');
-        return;
+        const age = Date.now() - cached.createdAt.getTime();
+        if (age < LOCAL_CACHE_STALE_MS) {
+          setOutputText(cached.translatedText);
+          setIsLoading(false);
+          console.log('   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.');
+          return;
+        } else {
+           console.log('   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.');
+        }
+      } else {
+        console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
       }
-      console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
+
 
       // --- LAYER 2: CALL SERVER (FIRESTORE/API) ---
       console.log('2. SERVER CHECK: Calling server-side flow...');
@@ -81,7 +92,7 @@ export default function Home() {
       setOutputText(result.translatedText);
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
-      console.log('4. LOCAL WRITE: Saving new translation to IndexedDB.');
+      console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB.');
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,

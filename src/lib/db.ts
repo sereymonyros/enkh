@@ -1,3 +1,4 @@
+
 'use client';
 // This file manages all interactions with the browser's built-in IndexedDB database.
 // It uses the 'idb' library, which is a small wrapper that makes IndexedDB easier to use.
@@ -62,18 +63,18 @@ const getDb = () => {
  * @param normalizedText The lowercase, trimmed text to look for.
  * @param sourceLanguage The source language of the text.
  * @param targetLanguage The target language for the translation.
- * @returns The translated text as a string if found, otherwise null.
+ * @returns The full TranslationEntry object if found, otherwise null.
  */
 export async function getTranslationFromDb(
   normalizedText: string,
   sourceLanguage: 'en' | 'km',
   targetLanguage: 'en' | 'km'
-): Promise<string | null> {
+): Promise<TranslationEntry | null> {
   const db = await getDb();
   // Use the `get` method with the compound key to find a specific record.
   const result = await db.get(STORE_NAME, [normalizedText, sourceLanguage, targetLanguage]);
-  // Return the translated text if a result was found, otherwise return null.
-  return result?.translatedText ?? null;
+  // Return the full entry if found, otherwise return null.
+  return result ?? null;
 }
 
 /**
@@ -92,11 +93,12 @@ export async function saveTranslationToDb(
 ): Promise<void> {
   const db = await getDb();
   // Use the `put` method to add or update a record in the store.
+  // This will overwrite any existing record with the same key, effectively updating the timestamp.
   await db.put(STORE_NAME, {
     normalizedText,
     sourceLanguage,
     targetLanguage,
     translatedText,
-    createdAt: new Date(), // We add a timestamp for potential future use (e.g., cache cleanup).
+    createdAt: new Date(),
   });
 }
