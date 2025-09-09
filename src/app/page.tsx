@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
 import { translateText } from "@/ai/flows/translate-text";
+import { getTranslationFromDb, saveTranslationToDb } from "@/lib/db";
 import { AngkorWatIcon } from "@/components/icons/angkor-wat-icon";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,10 @@ const languages = [
   { value: "km", label: "Khmer" },
 ];
 
+const normalizeText = (text: string) => {
+  return text.trim().toLowerCase();
+};
+
 export default function Home() {
   const [sourceLang, setSourceLang] = useState<"en" | "km">("en");
   const [targetLang, setTargetLang] = useState<"en" | "km">("km");
@@ -36,18 +41,38 @@ export default function Home() {
   const { toast } = useToast();
 
   const handleTranslate = useCallback(async () => {
-    if (!inputText.trim()) return;
+    const trimmedInput = inputText.trim();
+    if (!trimmedInput) return;
 
     setIsLoading(true);
     setOutputText("");
 
+    const normalizedInput = normalizeText(trimmedInput);
+
     try {
+      // 1. Check IndexedDB first
+      const cached = await getTranslationFromDb(normalizedInput, sourceLang, targetLang);
+      if (cached) {
+        setOutputText(cached);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. If not in IndexedDB, call the server action
       const result = await translateText({
-        text: inputText,
+        text: trimmedInput, // Send original trimmed text
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
       });
       setOutputText(result.translatedText);
+
+      // 3. Save the new translation to IndexedDB
+      await saveTranslationToDb(
+        normalizedInput,
+        sourceLang,
+        targetLang,
+        result.translatedText
+      );
     } catch (error) {
       console.error("Translation error:", error);
       toast({
