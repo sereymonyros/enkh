@@ -26,8 +26,9 @@ import {db} from '@/lib/firebase';
 
 const translationsCollection = collection(db, 'translations');
 
-// Define a constant for the cache lifetime (30 days in milliseconds).
-const CACHE_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+// The lifetime of a cached translation on the server (Firestore), read from environment variables.
+// Default to 30 days (in milliseconds) if not set.
+const CACHE_STALE_MS = parseInt(process.env.CACHE_STALE_MS || '2592000000', 10);
 
 const TranslateTextInputSchema = z.object({
   text: z.string().describe('The text to translate.'),
