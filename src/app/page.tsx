@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
+import { clearTranslations } from '@/ai/flows/clear-translations';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
 import { AngkorWatIcon } from '@/components/icons/angkor-wat-icon';
 import { Button } from '@/components/ui/button';
@@ -127,6 +128,24 @@ export default function Home() {
       setIsLoading(false);
     }
   }, [inputText, toast]);
+  
+  const handleClearFirestore = async () => {
+    try {
+      const result = await clearTranslations();
+      toast({
+        title: 'Firestore Cache Cleared',
+        description: `${result.deletedCount} translation(s) have been deleted from the server.`,
+      });
+    } catch (error) {
+      console.error('Error clearing Firestore:', error);
+      toast({
+        title: 'Clear Failed',
+        description: 'An error occurred while clearing the Firestore cache.',
+        variant: 'destructive',
+      });
+    }
+  };
+
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8 font-body">
@@ -188,6 +207,11 @@ export default function Home() {
       </Card>
       <footer className="mt-8 text-center text-muted-foreground text-sm">
         <p>Powered by AI. Translations may not be perfect.</p>
+        <div className="mt-4">
+          <Button variant="link" size="sm" onClick={handleClearFirestore}>
+            Clear Firestore Cache (Dev Tool)
+          </Button>
+        </div>
       </footer>
     </main>
   );
