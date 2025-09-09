@@ -127,21 +127,22 @@ const translateTextFlow = ai.defineFlow(
     if (!output) {
       throw new Error('Translation API returned no output.');
     }
+    const normalizedTranslatedText = normalizeText(output.translatedText);
     console.log('      ✅ API SUCCESS: Received translation from AI.');
 
-    // 4. POPULATE CACHE
-    // Write the fresh result back to Firestore.
+    // 4. POPULATE CACHE SYMMETRICALLY
+    // Write the fresh result back to Firestore for both directions.
+
+    // 4a. Update/Add the FORWARD translation (e.g., EN -> KM)
     if (staleDocId) {
-      // If we are refreshing a stale document, UPDATE the existing one.
-      console.log('   -> 2c. FIRESTORE UPDATE: Updating stale translation in Firestore.');
+      console.log('   -> 2c. FIRESTORE UPDATE (FORWARD): Updating stale translation in Firestore.');
       const docRef = doc(translationsCollection, staleDocId);
       await updateDoc(docRef, {
         translatedText: output.translatedText,
-        createdAt: serverTimestamp(), // Update the timestamp to now.
+        createdAt: serverTimestamp(),
       });
     } else {
-      // If this is a completely new translation, ADD a new document.
-      console.log('   -> 2c. FIRESTORE WRITE: Saving new translation with timestamp to Firestore.');
+      console.log('   -> 2c. FIRESTORE WRITE (FORWARD): Saving new translation to Firestore.');
       await addDoc(translationsCollection, {
         normalizedText: normalizedText,
         translatedText: output.translatedText,
@@ -150,6 +151,35 @@ const translateTextFlow = ai.defineFlow(
         createdAt: serverTimestamp(),
       });
     }
+
+    // 4b. Add the REVERSE translation (e.g., KM -> EN).
+    // We use a separate "put"-like operation for the reverse to keep it simple.
+    // Check if the reverse translation already exists.
+    const reverseQuery = query(
+      translationsCollection,
+      where('normalizedText', '==', normalizedTranslatedText),
+      where('sourceLanguage', '==', input.targetLanguage),
+      where('targetLanguage', '==', input.sourceLanguage),
+      limit(1)
+    );
+    const reverseSnapshot = await getDocs(reverseQuery);
+    if (reverseSnapshot.empty) {
+        console.log('   -> 2d. FIRESTORE WRITE (REVERSE): Saving new reverse translation to Firestore.');
+        await addDoc(translationsCollection, {
+          normalizedText: normalizedTranslatedText,
+          translatedText: input.text, // The original text is the translation in reverse
+          sourceLanguage: input.targetLanguage,
+          targetLanguage: input.sourceLanguage,
+          createdAt: serverTimestamp(),
+        });
+    } else {
+        console.log('   -> 2d. FIRESTORE UPDATE (REVERSE): Reverse translation already exists. Updating timestamp.');
+        const reverseDocRef = doc(translationsCollection, reverseSnapshot.docs[0].id);
+        await updateDoc(reverseDocRef, {
+            createdAt: serverTimestamp() // Just update the timestamp to keep it fresh
+        });
+    }
+
 
     // 5. RETURN RESULT
     return output;

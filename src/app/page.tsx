@@ -92,13 +92,23 @@ export default function Home() {
       setOutputText(result.translatedText);
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
-      console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB.');
+      console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
+      const normalizedTranslatedText = normalizeText(result.translatedText);
+      // Save the forward translation (e.g., EN -> KM)
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,
         targetLang,
         result.translatedText
       );
+      // Save the reverse translation (e.g., KM -> EN)
+      await saveTranslationToDb(
+        normalizedTranslatedText,
+        targetLang,
+        sourceLang,
+        trimmedInput // The original input is the reverse translation
+      );
+
     } catch (error) {
       console.error('Translation error:', error);
       toast({
