@@ -57,6 +57,10 @@ Text to translate: {{{text}}}
 Translation:`,
 });
 
+const normalizeText = (text: string) => {
+  return text.trim().toLowerCase();
+};
+
 const translateTextFlow = ai.defineFlow(
   {
     name: 'translateTextFlow',
@@ -64,10 +68,12 @@ const translateTextFlow = ai.defineFlow(
     outputSchema: TranslateTextOutputSchema,
   },
   async input => {
+    const normalizedText = normalizeText(input.text);
+
     // Cache lookup
     const q = query(
       translationsCollection,
-      where('originalText', '==', input.text),
+      where('normalizedText', '==', normalizedText),
       where('sourceLanguage', '==', input.sourceLanguage),
       where('targetLanguage', '==', input.targetLanguage),
       limit(1)
@@ -80,7 +86,7 @@ const translateTextFlow = ai.defineFlow(
     }
 
     // Cache miss, call the API
-    const {output} = await prompt(input);
+    const {output} = await prompt({...input, text: normalizedText});
     if (!output) {
       throw new Error('Translation API returned no output.');
     }
@@ -88,6 +94,7 @@ const translateTextFlow = ai.defineFlow(
     // Populate the cache
     await addDoc(translationsCollection, {
       originalText: input.text,
+      normalizedText: normalizedText,
       translatedText: output.translatedText,
       sourceLanguage: input.sourceLanguage,
       targetLanguage: input.targetLanguage,
