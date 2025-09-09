@@ -42,13 +42,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // --- NEW: This useEffect hook runs the database seeder ---
-  // It runs only once when the component is first mounted on the client.
   useEffect(() => {
-    // Call the function that handles the seeding logic.
-    // This function will itself check if seeding is needed, so it's safe to call on every page load.
     seedDatabaseIfNeeded();
-  }, []); // The empty dependency array [] ensures this runs only once.
+  }, []);
 
   const handleTranslate = useCallback(async () => {
     const trimmedInput = inputText.trim();
@@ -60,7 +56,8 @@ export default function Home() {
     const normalizedInput = normalizeText(trimmedInput);
 
     try {
-      console.log('CACHE CHECK: Checking IndexedDB...');
+      // --- LAYER 1: CHECK INDEXEDDB (LOCAL CACHE) ---
+      console.log('1. LOCAL CHECK: Checking for translation in IndexedDB...');
       const cached = await getTranslationFromDb(
         normalizedInput,
         sourceLang,
@@ -69,14 +66,13 @@ export default function Home() {
       if (cached) {
         setOutputText(cached);
         setIsLoading(false);
-        console.log('CACHE HIT: Found translation in IndexedDB.');
+        console.log('   ✅ LOCAL HIT: Found in IndexedDB. Flow complete.');
         return;
       }
+      console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
 
-      console.log(
-        'CACHE MISS: Not in IndexedDB. Checking server (Firestore/API)...'
-      );
-
+      // --- LAYER 2: CALL SERVER (FIRESTORE/API) ---
+      console.log('2. SERVER CHECK: Calling server-side flow...');
       const result = await translateText({
         text: trimmedInput,
         sourceLanguage: sourceLang,
@@ -84,7 +80,8 @@ export default function Home() {
       });
       setOutputText(result.translatedText);
 
-      console.log('CACHE WRITE: Saving new translation to IndexedDB.');
+      // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
+      console.log('4. LOCAL WRITE: Saving new translation to IndexedDB.');
       await saveTranslationToDb(
         normalizedInput,
         sourceLang,

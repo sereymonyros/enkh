@@ -1,4 +1,3 @@
-// This file is machine-generated - edit at your own risk.
 
 'use server';
 
@@ -70,7 +69,8 @@ const translateTextFlow = ai.defineFlow(
   async input => {
     const normalizedText = normalizeText(input.text);
 
-    // Cache lookup
+    // --- LAYER 3: CHECK FIRESTORE (SHARED CACHE) ---
+    console.log('   -> 3a. FIRESTORE CHECK: Checking for translation in Firestore...');
     const q = query(
       translationsCollection,
       where('normalizedText', '==', normalizedText),
@@ -81,17 +81,23 @@ const translateTextFlow = ai.defineFlow(
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
+      console.log('      ✅ FIRESTORE HIT: Found in Firestore. Flow complete.');
       const doc = querySnapshot.docs[0];
       return {translatedText: doc.data().translatedText};
     }
+    console.log('      ❌ FIRESTORE MISS: Not found in Firestore.');
 
-    // Cache miss, call the API
+
+    // --- LAYER 4: CALL AI API (FINAL RESORT) ---
+    console.log('   -> 3b. API CALL: Calling the AI translation API...');
     const {output} = await prompt({...input, text: normalizedText});
     if (!output) {
       throw new Error('Translation API returned no output.');
     }
+    console.log('      ✅ API SUCCESS: Received translation from AI.');
     
-    // Populate the cache
+    // --- CACHE WRITE: POPULATE FIRESTORE FOR SHARED USE ---
+    console.log('   -> 3c. FIRESTORE WRITE: Saving new translation to Firestore.');
     await addDoc(translationsCollection, {
       normalizedText: normalizedText,
       translatedText: output.translatedText,
