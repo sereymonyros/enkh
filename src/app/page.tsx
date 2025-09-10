@@ -458,16 +458,17 @@ export default function Home() {
         )}
         <Sidebar>
           <SidebarHeader>
-            {/* You can add a header here, like a logo or title */}
+            <SidebarMenu>
+              <SidebarMenuItem>
+                 <ThemeToggle />
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarHeader>
           <SidebarContent>
             {/* Content for the main section of the sidebar */}
           </SidebarContent>
           <SidebarFooter className="justify-center items-center">
             <SidebarMenu>
-              <SidebarMenuItem>
-                 <ThemeToggle />
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
                   <MessageSquare />
@@ -558,4 +559,3 @@ export default function Home() {
     
 
     
-
