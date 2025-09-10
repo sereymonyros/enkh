@@ -333,16 +333,7 @@ export default function Home() {
                   <Copy size={14} />
                </Button>
                {item.fromCache && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
-                            <Database size={12} />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>From Cache</p>
-                    </TooltipContent>
-                </Tooltip>
+                <Database size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                )}
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
                   <Volume2 size={14} />
@@ -420,5 +411,7 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
 
     
