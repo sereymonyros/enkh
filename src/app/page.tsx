@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -433,6 +433,7 @@ export default function Home() {
               />
             </div>
               <div className="flex justify-center items-center gap-4">
+              {!isLoading && (
                     <Button
                       size="icon"
                       className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
@@ -441,6 +442,15 @@ export default function Home() {
                     >
                       <Send size={24} />
                     </Button>
+              )}
+              {isLoading && (
+                <Button
+                      size="icon"
+                      className="bg-primary/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
+                    >
+                      <StopCircle size={24} />
+                    </Button>
+                )}
               </div>
           </div>
            <div className="fixed bottom-4 left-4 z-20 pointer-events-auto">
@@ -456,5 +466,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
