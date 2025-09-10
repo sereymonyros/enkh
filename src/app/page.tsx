@@ -294,11 +294,11 @@ export default function Home() {
                     }}
                    />
                    <div className="absolute top-0 right-0 flex items-center gap-1">
-                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-6 h-6 shrink-0">
-                       <X size={12} />
+                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
+                       <X size={14} />
                      </Button>
-                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-6 h-6 shrink-0">
-                       <Check size={12} />
+                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
+                       <Check size={14} />
                      </Button>
                    </div>
                  </div>
@@ -309,14 +309,22 @@ export default function Home() {
           </div>
         );
     } else {
-        const isBeingEdited = item.translatedText === '...';
-        
-        if (isLoading && !isBeingEdited && index === translationHistory.length - 1) {
-            const prevItem = translationHistory[index - 1];
-            if (prevItem && prevItem.isUser) {
-              return null; // Don't render the AI bubble if the previous user message is what's loading
-            }
-        }
+      const isBeingEdited = item.translatedText === '...';
+
+      if (isBeingEdited) {
+        return (
+          <div key={item.id} className="flex justify-start items-start gap-3">
+            <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
+          </div>
+        );
+      }
+
+      if (isLoading && index === translationHistory.length - 1) {
+          const prevItem = translationHistory[index - 1];
+          if (prevItem && prevItem.isUser) {
+            return null;
+          }
+      }
 
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
@@ -331,13 +339,7 @@ export default function Home() {
                </Button>
             </div>
              <div className="bg-[#1e1f20] rounded-tr-2xl rounded-b-2xl p-3">
-              {isBeingEdited ? (
-                 <div className="flex justify-start items-center gap-3">
-                   <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 animate-spin" />
-                 </div>
-              ) : (
                 <p className="text-lg">{item.translatedText}</p>
-              )}
             </div>
           </div>
         </div>
@@ -349,64 +351,64 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gemini-gradient text-white flex flex-col font-body antialiased">
-        <main className="flex flex-col items-center p-4 gap-4 w-full flex-1">
-           <ScrollArea className="w-full max-w-2xl flex-1" viewportRef={scrollAreaViewportRef}>
-             <div className="flex flex-col gap-6 pb-48">
-              {/* History */}
-              {translationHistory.map(renderHistoryItem)}
+        <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4" viewportRef={scrollAreaViewportRef}>
+          <div className="flex flex-col gap-6 pb-48 pt-4">
+            {/* History */}
+            {translationHistory.map(renderHistoryItem)}
 
-              {/* Loading Indicator */}
-              {isLoading && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
-                 <div className="flex justify-start items-start gap-3">
-                   <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
-                 </div>
-              )}
-            </div>
-          </ScrollArea>
-          </main>
-          {/* Input Bar */}
-           <div className="fixed bottom-0 left-0 right-0 z-10">
-             <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
-                <div className={cn(
-                    "border border-blue-600 rounded-full p-2 flex items-center gap-2",
-                    isShaking ? 'animate-shake' : ''
-                  )}>
-                  <Textarea
-                    placeholder="Enter text to translate..."
-                    className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    rows={1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleTranslate(inputText);
-                      }
-                    }}
-                    disabled={editingItemId !== null}
-                  />
+            {/* Loading Indicator for new messages */}
+            {isLoading && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
+                <div className="flex justify-start items-start gap-3">
+                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
                 </div>
-                 <div className="flex justify-center items-center gap-4">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
-                          onClick={() => handleTranslate(inputText)}
-                          disabled={isLoading || editingItemId !== null}
-                        >
-                          <Send size={24} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Translate</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+            )}
+          </div>
+        </ScrollArea>
+        {/* Input Bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-10">
+          <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
+            <div className={cn(
+                "border border-blue-600 rounded-full p-2 flex items-center gap-2",
+                isShaking ? 'animate-shake' : ''
+              )}>
+              <Textarea
+                placeholder="Enter text to translate..."
+                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleTranslate(inputText);
+                  }
+                }}
+                disabled={editingItemId !== null}
+              />
+            </div>
+              <div className="flex justify-center items-center gap-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
+                      onClick={() => handleTranslate(inputText)}
+                      disabled={isLoading || editingItemId !== null}
+                    >
+                      <Send size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Translate</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
           </div>
+        </div>
       </div>
     </TooltipProvider>
   );
 }
+
+    
