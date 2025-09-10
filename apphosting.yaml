@@ -9,3 +9,19 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # Declare the secrets that will be available to your application
+  # as environment variables. You must create these secrets in
+  # Google Cloud Secret Manager.
+  secrets:
+    - secret: NEXT_PUBLIC_FIREBASE_API_KEY
+    - secret: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    - secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    - secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    - secret: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    - secret: NEXT_PUBLIC_FIREBASE_APP_ID
+
+# To connect to a VPC network, specify the connector ID.
+# vpcConnector: 'my-connector'
+
+# To grant IAM roles to your backend, specify the service account.
+# serviceAccount: 'my-service-account'
