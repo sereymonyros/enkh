@@ -208,7 +208,7 @@ const Sidebar = React.forwardRef<
             side={side}
           >
             <SheetTitle className="sr-only">Sidebar Menu</SheetTitle>
-            <div className="flex h-full w-full flex-col border-blue-400">{children}</div>
+            <div className="flex h-full w-full flex-col border-r-2 border-blue-400">{children}</div>
           </SheetContent>
         </Sheet>
       )

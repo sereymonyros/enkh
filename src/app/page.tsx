@@ -340,13 +340,13 @@ export default function Home() {
             <div className="flex items-center gap-0.5">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
-                  <Copy size={14} />
+                  <Copy size={14} className="text-blue-400/50" />
                </Button>
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
-                  <Volume2 size={14} />
+                  <Volume2 size={14} className="text-blue-400/50" />
                </Button>
                {item.fromCache && (
-                <Database size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Database size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400/50" />
                )}
             </div>
              <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
