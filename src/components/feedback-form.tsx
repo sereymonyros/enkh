@@ -34,16 +34,25 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
       >
         <div className="relative">
           <SheetTitle className="sr-only">Feedback Form</SheetTitle>
-          {/* Custom Close Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-0 right-0 h-8 w-8"
-            onClick={onClose}
-          >
-            <X size={20} />
-            <span className="sr-only">Close</span>
-          </Button>
+
+          {/* Custom Controls Container */}
+          <div className="absolute top-0 right-0 flex items-center">
+            {/* Submit Button */}
+            <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8">
+              <Send size={20}/>
+            </Button>
+            {/* Custom Close Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onClose}
+            >
+              <X size={20} />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
+
 
           <div className="flex flex-col space-y-4 pt-8">
             {/* Star Rating */}
@@ -76,12 +85,6 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
               className="min-h-[100px] bg-background"
             />
 
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button onClick={handleSubmit} variant="ghost" size="icon">
-                <Send />
-              </Button>
-            </div>
           </div>
         </div>
       </SheetContent>
