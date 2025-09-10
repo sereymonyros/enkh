@@ -111,7 +111,7 @@ export default {
         },
         'pulse-bg': {
           '50%': {
-            backgroundColor: 'hsl(var(--destructive) / 0.3)',
+            backgroundColor: 'hsl(var(--destructive) / 0.5)',
             transform: 'scale(1.25)',
           },
         },
