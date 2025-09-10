@@ -67,7 +67,7 @@ export default function Home() {
     }, 0);
   }, [translationHistory, isLoading]);
 
-  const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, historyToUpdate: HistoryItem[] = translationHistory) => {
+  const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, editedMessageId: number | null = null) => {
     const trimmedInput = textToTranslate.trim();
     if (!trimmedInput) {
       if (!isEditing) {
@@ -78,7 +78,9 @@ export default function Home() {
     }
 
     setIsLoading(true);
-    setInputText('Hello Cambodia');
+    if (!isEditing) {
+        setInputText('Hello Cambodia');
+    }
     setEditingItemId(null);
 
     // If it's a new message, add the user message to history.
@@ -111,6 +113,22 @@ export default function Home() {
         });
         if (!isEditing) {
             setTranslationHistory(prev => prev.slice(0, -1));
+        } else if (editedMessageId) {
+             // If edit fails, revert the change
+            setTranslationHistory(prev => {
+                const messageIndex = prev.findIndex(item => item.id === editedMessageId);
+                if (messageIndex !== -1 && prev[messageIndex + 1]) {
+                    const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
+                     if(originalUserMessage) {
+                        const newHistory = [...prev];
+                        newHistory[messageIndex] = originalUserMessage; // Revert user message
+                        // We assume the AI message is next, but ideally it should also be reverted
+                        // For now, let's just revert the user's text
+                        return newHistory;
+                    }
+                }
+                return prev;
+            })
         }
         setIsLoading(false);
         return;
@@ -156,7 +174,7 @@ export default function Home() {
       }
       
       const aiMessage: HistoryItem = {
-        id: Date.now() + 1, // Ensure unique ID
+        id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1, // Ensure unique ID
         originalText: trimmedInput,
         translatedText: translatedText,
         sourceLanguage: sourceLang,
@@ -165,7 +183,16 @@ export default function Home() {
       };
 
       if(isEditing){
-        setTranslationHistory([...historyToUpdate, aiMessage]);
+         setTranslationHistory(prev => {
+            if (!editedMessageId) return prev;
+            const messageIndex = prev.findIndex(item => item.id === editedMessageId);
+            if (messageIndex === -1) return prev;
+            
+            const newHistory = [...prev];
+            // The AI message should be at the next index
+            newHistory[messageIndex + 1] = aiMessage; 
+            return newHistory;
+        });
       } else {
         setTranslationHistory(prev => [...prev, aiMessage]);
       }
@@ -203,24 +230,27 @@ export default function Home() {
 
     // Find the index of the user message being edited
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
-    if (messageIndex === -1) return;
-
-    // Create a new history array up to the point of the edited message.
-    // This effectively removes the message and its old translation, preparing for the new one.
-    const historyBeforeEdit = translationHistory.slice(0, messageIndex);
+    if (messageIndex === -1 || !translationHistory[messageIndex + 1]) {
+        cancelEditing();
+        return;
+    };
     
-    const updatedUserMessage: HistoryItem = {
-        ...translationHistory[messageIndex],
+    const newHistory = [...translationHistory];
+
+    // Update the user message in place
+    newHistory[messageIndex] = {
+        ...newHistory[messageIndex],
         originalText: editedText,
     };
 
-    const newHistory = [...historyBeforeEdit, updatedUserMessage];
+    // Mark the following AI message as loading
+    newHistory[messageIndex + 1] = {
+        ...newHistory[messageIndex + 1],
+        translatedText: '...', // Loading indicator
+    };
     
-    // We update the state first with the corrected user message
     setTranslationHistory(newHistory);
-
-    // Then we call translate, passing the new history state
-    handleTranslate(editedText, true, newHistory);
+    handleTranslate(editedText, true, editingItemId);
 
     setEditingItemId(null);
     setEditedText("");
@@ -282,8 +312,9 @@ export default function Home() {
         // Check if the previous message was a user message that is currently loading its translation
         const prevItem = translationHistory[index - 1];
         const isPrevItemLoading = prevItem && prevItem.isUser && isLoading && index === translationHistory.length -1;
+        const isBeingEdited = item.translatedText === '...';
         
-        if (isPrevItemLoading) {
+        if (isPrevItemLoading && !isBeingEdited) {
             return null; // Don't render the AI bubble if the previous user message is what's loading
         }
 
@@ -299,8 +330,14 @@ export default function Home() {
                   <Volume2 size={14} />
                </Button>
             </div>
-            <div className="bg-[#1e1f20] rounded-tr-2xl rounded-b-2xl p-3">
-              <p className="text-lg">{item.translatedText}</p>
+             <div className="bg-[#1e1f20] rounded-tr-2xl rounded-b-2xl p-3">
+              {isBeingEdited ? (
+                 <div className="flex justify-start items-center gap-3">
+                   <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 animate-spin" />
+                 </div>
+              ) : (
+                <p className="text-lg">{item.translatedText}</p>
+              )}
             </div>
           </div>
         </div>
@@ -373,3 +410,5 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
