@@ -37,10 +37,6 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
 
           {/* Custom Controls Container */}
           <div className="absolute top-0 right-0 flex items-center">
-            {/* Submit Button */}
-            <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8">
-              <Send size={20}/>
-            </Button>
             {/* Custom Close Button */}
             <Button
               variant="ghost"
@@ -50,6 +46,10 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
             >
               <X size={20} />
               <span className="sr-only">Close</span>
+            </Button>
+            {/* Submit Button */}
+            <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8">
+              <Send size={20}/>
             </Button>
           </div>
 
