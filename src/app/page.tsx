@@ -67,21 +67,22 @@ export default function Home() {
     }, 0);
   }, [translationHistory, isLoading]);
 
-  const handleTranslate = useCallback(async (textToTranslate: string, existingItemId?: number) => {
+  const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, historyToUpdate: HistoryItem[] = translationHistory) => {
     const trimmedInput = textToTranslate.trim();
     if (!trimmedInput) {
-       setIsShaking(true);
-      setTimeout(() => setIsShaking(false), 820); // Duration of the shake animation
+      if (!isEditing) {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 820);
+      }
       return;
     }
 
     setIsLoading(true);
-    setInputText('Hello Cambodia'); // Reset input to default
-    setEditingItemId(null); // Exit editing mode
+    setInputText('Hello Cambodia');
+    setEditingItemId(null);
 
-    // If it's a new message, add user's message to history.
-    // If it's an edit, we'll update it later, but remove the old AI response.
-    if (!existingItemId) {
+    // If it's a new message, add the user message to history.
+    if (!isEditing) {
         const userMessage: HistoryItem = {
           id: Date.now(),
           originalText: trimmedInput,
@@ -90,22 +91,8 @@ export default function Home() {
           targetLanguage: 'km', // Placeholder
           isUser: true,
         };
+        // Use a function for setting state to get the most recent state
         setTranslationHistory(prev => [...prev, userMessage]);
-    } else {
-        // Find the index of the user message and the AI message that follows it
-        const userMessageIndex = translationHistory.findIndex(item => item.id === existingItemId);
-        if (userMessageIndex !== -1) {
-            // Update the original text
-            const updatedHistory = [...translationHistory];
-            updatedHistory[userMessageIndex].originalText = trimmedInput;
-            
-            // Remove the old AI response if it exists
-            if (userMessageIndex + 1 < updatedHistory.length && !updatedHistory[userMessageIndex + 1].isUser) {
-                updatedHistory.splice(userMessageIndex + 1, 1);
-            }
-
-            setTranslationHistory(updatedHistory);
-        }
     }
 
 
@@ -122,7 +109,7 @@ export default function Home() {
             'Could not determine the input language. Please use English or Khmer.',
           variant: 'destructive',
         });
-        if (!existingItemId) {
+        if (!isEditing) {
             setTranslationHistory(prev => prev.slice(0, -1));
         }
         setIsLoading(false);
@@ -142,70 +129,48 @@ export default function Home() {
         targetLang
       );
 
+      let translatedText: string;
+
       if (cached) {
         const age = Date.now() - cached.createdAt.getTime();
         if (age < LOCAL_CACHE_STALE_MS) {
-            const aiMessage: HistoryItem = {
-            id: Date.now() + 1, // Ensure unique ID
-            originalText: trimmedInput,
-            translatedText: cached.translatedText,
-            sourceLanguage: sourceLang,
-            targetLanguage: targetLang,
-            isUser: false,
-          };
-          setTranslationHistory(prev => [...prev, aiMessage]);
-          setIsLoading(false);
-          console.log(
-            '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.'
-          );
-          return;
+           console.log( '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.');
+           translatedText = cached.translatedText;
         } else {
-          console.log(
-            '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.'
-          );
+            console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.');
+            const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
+            translatedText = result.translatedText;
         }
       } else {
         console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
+         // --- LAYER 3: CALL SERVER (FIRESTORE/API) ---
+        console.log('3. SERVER CHECK: Calling server-side flow...');
+        const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
+        translatedText = result.translatedText;
+
+         // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
+        console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
+        const normalizedTranslatedText = normalizeText(translatedText);
+        await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
+        await saveTranslationToDb(normalizedTranslatedText, targetLang, sourceLang, trimmedInput);
       }
-
-      // --- LAYER 3: CALL SERVER (FIRESTORE/API) ---
-      console.log('3. SERVER CHECK: Calling server-side flow...');
-      const result = await translateText({
-        text: trimmedInput,
-        sourceLanguage: sourceLang,
-        targetLanguage: targetLang,
-      });
-
-      const newHistoryItem: HistoryItem = {
-        id: Date.now() + 1,
+      
+      const aiMessage: HistoryItem = {
+        id: Date.now() + 1, // Ensure unique ID
         originalText: trimmedInput,
-        translatedText: result.translatedText,
+        translatedText: translatedText,
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
         isUser: false,
       };
 
-      setTranslationHistory(prev => [...prev, newHistoryItem]);
+      if(isEditing){
+        setTranslationHistory([...historyToUpdate, aiMessage]);
+      } else {
+        setTranslationHistory(prev => [...prev, aiMessage]);
+      }
 
-      // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
-      console.log(
-        '4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.'
-      );
-      const normalizedTranslatedText = normalizeText(result.translatedText);
-      // Save the forward translation
-      await saveTranslationToDb(
-        normalizedInput,
-        sourceLang,
-        targetLang,
-        result.translatedText
-      );
-      // Save the reverse translation
-      await saveTranslationToDb(
-        normalizedTranslatedText,
-        targetLang,
-        sourceLang,
-        trimmedInput // The original input is the reverse translation
-      );
+
     } catch (error) {
       console.error('Translation error:', error);
       toast({
@@ -214,8 +179,7 @@ export default function Home() {
           'An error occurred while translating the text. Please try again.',
         variant: 'destructive',
       });
-      // Also remove user message on error
-      if (!existingItemId) {
+      if (!isEditing) {
         setTranslationHistory(prev => prev.slice(0, -1));
       }
     } finally {
@@ -235,9 +199,31 @@ export default function Home() {
   };
 
   const submitEdit = () => {
-    if (editingItemId) {
-      handleTranslate(editedText, editingItemId);
-    }
+    if (editingItemId === null) return;
+
+    // Find the index of the user message being edited
+    const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
+    if (messageIndex === -1) return;
+
+    // Create a new history array up to the point of the edited message.
+    // This effectively removes the message and its old translation, preparing for the new one.
+    const historyBeforeEdit = translationHistory.slice(0, messageIndex);
+    
+    const updatedUserMessage: HistoryItem = {
+        ...translationHistory[messageIndex],
+        originalText: editedText,
+    };
+
+    const newHistory = [...historyBeforeEdit, updatedUserMessage];
+    
+    // We update the state first with the corrected user message
+    setTranslationHistory(newHistory);
+
+    // Then we call translate, passing the new history state
+    handleTranslate(editedText, true, newHistory);
+
+    setEditingItemId(null);
+    setEditedText("");
   };
 
   const handleCopyToClipboard = (text: string) => {
@@ -326,9 +312,9 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gemini-gradient text-white flex flex-col font-body antialiased">
-        <main className="flex flex-col items-center p-4 gap-4 relative pb-48">
-           <ScrollArea className="w-full max-w-2xl no-scrollbar" viewportRef={scrollAreaViewportRef}>
-             <div className="flex flex-col gap-6 pb-4">
+        <main className="flex flex-col items-center p-4 gap-4 w-full flex-1">
+           <ScrollArea className="w-full max-w-2xl flex-1" viewportRef={scrollAreaViewportRef}>
+             <div className="flex flex-col gap-6 pb-48">
               {/* History */}
               {translationHistory.map(renderHistoryItem)}
 
@@ -387,5 +373,3 @@ export default function Home() {
     </TooltipProvider>
   );
 }
-
-    
