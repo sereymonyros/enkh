@@ -122,138 +122,130 @@ export default function Home() {
       }
       return;
     }
-
+  
     setIsLoading(true);
     translationRequestRef.current.isCancelled = false;
     if (!isEditing) {
         setInputText('Hello');
     }
-
+  
     // If it's a new message, add the user message to history.
     if (!isEditing) {
         const userMessage: HistoryItem = {
           id: Date.now(),
           originalText: trimmedInput,
           translatedText: '', // No translation for user message
-          sourceLanguage: 'en', // Placeholder, will be detected
+          sourceLanguage: 'en', // Placeholder
           targetLanguage: 'km', // Placeholder
           isUser: true,
         };
-        // Use a function for setting state to get the most recent state
         setTranslationHistory(prev => [...prev, userMessage]);
     }
-
-
+  
     try {
-      // --- Step 1: Detect the language ---
-      console.log('1. DETECT: Detecting input language...');
-      const detectionResult = await detectLanguage({ text: trimmedInput });
-      if (translationRequestRef.current.isCancelled) return;
-      
-      const currentDetectedLang = detectionResult.language;
-
-      if (currentDetectedLang === 'unknown') {
-        toast.error('Language Not Detected', {
-          description: 'Could not determine the input language. Please use English or Khmer.',
-        });
-        if (isEditing && editedMessageId) {
-             setTranslationHistory(prev => {
-                const messageIndex = prev.findIndex(item => item.id === editedMessageId);
-                if (messageIndex === -1) return prev;
-                 const newHistory = [...prev];
-                 newHistory[messageIndex + 1] = { ...newHistory[messageIndex + 1], translatedText: 'Language detection failed.'};
-                 return newHistory;
-             });
-        } else {
-            setTranslationHistory(prev => prev.slice(0, -1));
-        }
-        setIsLoading(false);
-        setEditingItemId(null);
-        return;
-      }
-      console.log(`   ✅ DETECTED: Language is '${currentDetectedLang}'.`);
-
-      const sourceLang = currentDetectedLang;
-      const targetLang = sourceLang === 'en' ? 'km' : 'en';
       const normalizedInput = normalizeText(trimmedInput);
-      
       let translatedText: string | null = null;
+      let sourceLang: 'en' | 'km' | null = null;
+      let targetLang: 'en' | 'km' | null = null;
       let fromCache = false;
-
-      // --- LAYER 1: CHECK INDEXEDDB (LOCAL-ONLY CACHE) ---
-      console.log('2. LOCAL/USER CHECK: Checking for translation in IndexedDB...');
-      const iDbCache = await getTranslationFromDb(
-        normalizedInput,
-        sourceLang,
-        targetLang
-      );
-
-      if (iDbCache) {
-          const age = Date.now() - iDbCache.createdAt.getTime();
-          if (age < LOCAL_CACHE_STALE_MS) {
-            console.log( '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB.');
-            translatedText = iDbCache.translatedText;
-            fromCache = true;
-          } else {
-            console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate.');
-          }
+  
+      // --- OFFLINE-FIRST CACHE CHECK ---
+      // This function checks both IndexedDB and Firestore's offline cache for a translation
+      // in either direction (en->km or km->en).
+      const checkCaches = async (text: string, lang1: 'en' | 'km', lang2: 'en' | 'km') => {
+        // Check Layer 1: Private IndexedDB
+        const iDbCache = await getTranslationFromDb(text, lang1, lang2);
+        if (iDbCache && (Date.now() - iDbCache.createdAt.getTime() < LOCAL_CACHE_STALE_MS)) {
+          return { translatedText: iDbCache.translatedText, source: lang1, target: lang2, fromCache: true };
+        }
+        // Check Layer 2: Shared Firestore Offline Cache
+        const firestoreCache = await getTranslationFromFirestoreCache(text, lang1, lang2);
+        if (firestoreCache) {
+          // If found in shared cache, populate our faster private cache for next time.
+          await saveTranslationToDb(text, lang1, lang2, firestoreCache.translatedText);
+          return { translatedText: firestoreCache.translatedText, source: lang1, target: lang2, fromCache: true };
+        }
+        return null;
+      };
+  
+      console.log('1. CACHE CHECK: Checking local caches bidirectionally...');
+      const cacheResultEnKm = await checkCaches(normalizedInput, 'en', 'km');
+      if (cacheResultEnKm) {
+        console.log('   ✅ CACHE HIT: Found en->km translation locally.');
+        translatedText = cacheResultEnKm.translatedText;
+        sourceLang = 'en';
+        targetLang = 'km';
+        fromCache = true;
       } else {
-          console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
+        const cacheResultKmEn = await checkCaches(normalizedInput, 'km', 'en');
+        if (cacheResultKmEn) {
+          console.log('   ✅ CACHE HIT: Found km->en translation locally.');
+          translatedText = cacheResultKmEn.translatedText;
+          sourceLang = 'km';
+          targetLang = 'en';
+          fromCache = true;
+        } else {
+            console.log('   ❌ CACHE MISS: Not found in any local cache.');
+        }
       }
-      
-      // --- LAYER 2: CHECK FIRESTORE (OFFLINE-CAPABLE SHARED CACHE) ---
+  
+      // --- ONLINE-ONLY LOGIC ---
+      // This block only runs if we had a cache miss and the user is online.
       if (!translatedText) {
-          console.log('3. SHARED CHECK: Checking for translation in offline-capable Firestore cache...');
-          const firestoreCache = await getTranslationFromFirestoreCache(normalizedInput, sourceLang, targetLang);
-          if (firestoreCache) {
-              console.log( '   ✅ SHARED HIT: Found translation in Firestore cache.');
-              translatedText = firestoreCache.translatedText;
-              fromCache = true;
-              // Symmetrically populate the user's personal IndexedDB for future, faster lookups.
-              await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
-              await saveTranslationToDb(normalizeText(translatedText), targetLang, sourceLang, trimmedInput);
-          } else {
-              console.log('   ❌ SHARED MISS: Not found in Firestore cache.');
-          }
-      }
+        if (!navigator.onLine) {
+            toast.error("You are offline", {
+                description: "This translation is not in the offline dictionary. Please connect to the internet to translate new words.",
+            });
+            setTranslationHistory(prev => prev.slice(0, -1)); // Remove the user message
+            setIsLoading(false);
+            return;
+        }
 
-      // --- LAYER 3: CALL SERVER-SIDE FLOW (ONLINE ONLY) ---
-      if (!translatedText) {
-        // This block only runs if both local caches miss. It requires an internet connection.
-        console.log('4. SERVER CALL: Calling server-side flow...');
+        console.log('2. SERVER CALL: Calling server-side flows...');
         try {
-            const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
+            // Step 2a: Detect the language on the server
+            console.log('   -> 2a. DETECT: Detecting input language...');
+            const detectionResult = await detectLanguage({ text: trimmedInput });
             if (translationRequestRef.current.isCancelled) return;
+            const detectedLang = detectionResult.language;
+            
+            if (detectedLang === 'unknown') {
+                toast.error('Language Not Detected', { description: 'Could not determine the input language. Please use English or Khmer.' });
+                throw new Error('Language detection failed'); // Throw to be caught by outer catch block
+            }
+            console.log(`      ✅ DETECTED: Language is '${detectedLang}'.`);
+            
+            const detectedSourceLang = detectedLang;
+            const detectedTargetLang = detectedLang === 'en' ? 'km' : 'en';
+
+            // Step 2b: Translate the text on the server
+            console.log('   -> 2b. TRANSLATE: Calling server-side translation...');
+            const result = await translateText({ text: trimmedInput, sourceLanguage: detectedSourceLang, targetLanguage: detectedTargetLang });
+            if (translationRequestRef.current.isCancelled) return;
+            
             translatedText = result.translatedText;
             fromCache = result.fromCache; // This will be true if the server found it in *its* cache.
+            sourceLang = detectedSourceLang;
+            targetLang = detectedTargetLang;
             
-            // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
-            console.log('5. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
-            const normalizedTranslatedText = normalizeText(translatedText);
+            // Step 2c: Symmetrically populate local caches for future offline use.
+            console.log('3. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
             await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
-            await saveTranslationToDb(normalizedTranslatedText, targetLang, sourceLang, trimmedInput);
-        } catch(e) {
-            if (!navigator.onLine) {
-                toast.error("You are offline", {
-                    description: "This translation is not in the offline dictionary. Please connect to the internet to translate new words.",
-                });
-            } else {
-                throw e; // Re-throw other errors
-            }
+            await saveTranslationToDb(normalizeText(translatedText), targetLang, sourceLang, trimmedInput);
+
+        } catch (e) {
+            // Re-throw to be handled by the final catch block
+            throw e;
         }
       }
-      
+  
       if (translationRequestRef.current.isCancelled) return;
-      
-      // If after all checks, we still don't have a translation, it's because the user is offline and it was a cache miss.
-      if (!translatedText) {
-          setTranslationHistory(prev => prev.slice(0, -1)); // Remove the user message
-          setIsLoading(false);
-          setEditingItemId(null);
-          return;
+  
+      // If we still don't have a translation or essential language info, something went wrong.
+      if (!translatedText || !sourceLang || !targetLang) {
+          throw new Error("Translation process failed to produce a result.");
       }
-
-
+  
       const aiMessage: HistoryItem = {
         id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1, // Ensure unique ID
         originalText: trimmedInput,
@@ -263,27 +255,24 @@ export default function Home() {
         isUser: false,
         fromCache,
       };
-
+  
       if(isEditing && editedMessageId){
          setTranslationHistory(prev => {
             const messageIndex = prev.findIndex(item => item.id === editedMessageId);
             if (messageIndex === -1) return prev;
-            
             const newHistory = [...prev];
-            // The AI message should be at the next index
-            newHistory[messageIndex + 1] = aiMessage; 
+            newHistory[messageIndex + 1] = aiMessage;
             return newHistory;
         });
       } else {
         setTranslationHistory(prev => [...prev, aiMessage]);
       }
-
-
+  
     } catch (error) {
       if (translationRequestRef.current.isCancelled) return;
       console.error('Translation error:', error);
       toast.error('Translation Failed', {
-        description: 'An error occurred while translating the text. Please try again.',
+        description: (error as Error).message || 'An error occurred while translating. Please try again.',
       });
        if (isEditing && editedMessageId) {
              setTranslationHistory(prev => {
@@ -294,7 +283,13 @@ export default function Home() {
                  return newHistory;
              });
         } else {
-            setTranslationHistory(prev => prev.slice(0, -1));
+            // Remove the optimistic user message on failure
+            setTranslationHistory(prev => {
+                if (prev.length > 0 && prev[prev.length - 1].isUser) {
+                    return prev.slice(0, -1);
+                }
+                return prev;
+            });
         }
     } finally {
       if (!translationRequestRef.current.isCancelled) {
@@ -591,3 +586,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
