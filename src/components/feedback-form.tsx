@@ -41,14 +41,14 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 text-blue-400"
               onClick={onClose}
             >
               <X size={20} />
               <span className="sr-only">Close</span>
             </Button>
             {/* Submit Button */}
-            <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8">
+            <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8 text-blue-400">
               <Send size={20}/>
             </Button>
           </div>
