@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, ArrowUpSquare, Trash2 } from 'lucide-react';
+import { Sparkles, ArrowUpSquare, Trash2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { clearTranslations } from '@/ai/flows/clear-translations';
@@ -196,10 +196,14 @@ export default function Home() {
                 </div>
               ))}
                {isLoading && (
-                  <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4 flex items-center justify-center">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span>Translating...</span>
+                 <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-left flex items-center">
+                        <Sparkles className="h-6 w-6 animate-spin text-white/80" />
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg text-white/80">{inputText}</p>
+                      </div>
                     </div>
                   </div>
                 )}
