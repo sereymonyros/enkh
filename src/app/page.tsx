@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Camera, Mic, Send } from 'lucide-react';
+import { Sparkles, Send } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -200,7 +200,7 @@ export default function Home() {
     if (item.isUser) {
       return (
         <div key={item.id} className="flex justify-end">
-          <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
+          <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
             <p className="text-lg text-white/80">{item.originalText}</p>
           </div>
         </div>
