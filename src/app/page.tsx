@@ -32,7 +32,7 @@ type HistoryItem = {
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
 const LOCAL_CACHE_STALE_MS =
-  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 8640000;
+  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 864000;
 
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
@@ -325,7 +325,7 @@ export default function Home() {
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-[#131314] text-white flex flex-col font-body antialiased">
         <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto">
-           <ScrollArea className="w-full max-w-2xl flex-1" viewportRef={scrollAreaViewportRef}>
+           <ScrollArea className="w-full max-w-2xl flex-1 no-scrollbar" viewportRef={scrollAreaViewportRef}>
              <div className="flex flex-col gap-6 pb-4">
               {/* History */}
               {translationHistory.map(renderHistoryItem)}
