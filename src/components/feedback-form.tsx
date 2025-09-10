@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, X } from 'lucide-react';
@@ -33,6 +33,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
         hideCloseButton={true} // Hide the default close button
       >
         <div className="relative">
+          <SheetTitle className="sr-only">Feedback Form</SheetTitle>
           {/* Custom Close Button */}
           <Button
             variant="ghost"
