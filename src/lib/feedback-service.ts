@@ -17,8 +17,8 @@ export type FeedbackData = {
  * @throws Will throw an error if the document cannot be added.
  */
 export async function submitFeedback(feedbackData: FeedbackData): Promise<string> {
-  if (!feedbackData.rating && !feedbackData.comment.trim()) {
-    throw new Error('Either a rating or a comment must be provided.');
+  if (!feedbackData.rating || !feedbackData.comment.trim()) {
+    throw new Error('Both a rating and a comment must be provided.');
   }
 
   try {

@@ -21,6 +21,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   const resetForm = () => {
     setRating(0);
@@ -35,8 +36,10 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
   }
 
   const handleSubmit = async () => {
-    if (rating === 0 && !feedbackText.trim()) {
-        toast.error("Please provide a rating or a comment.");
+    if (rating === 0 || !feedbackText.trim()) {
+        toast.error("Please provide a rating and a comment.");
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 820);
         return;
     }
     setIsSubmitting(true);
@@ -63,7 +66,12 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
         onInteractOutside={handleClose}
         hideCloseButton={true} // Hide the default close button
       >
-        <div className="relative">
+        <div
+          className={cn(
+            'relative',
+            isShaking ? 'animate-shake' : ''
+          )}
+        >
           <SheetTitle className="sr-only">Feedback Form</SheetTitle>
 
           {/* Custom Controls Container */}
