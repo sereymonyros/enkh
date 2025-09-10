@@ -276,11 +276,11 @@ export default function Home() {
             </Button>
             <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
-                <div className="flex items-center justify-between gap-4">
+                 <div className="relative">
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0"
+                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0 pr-12"
                      autoFocus
                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -293,12 +293,12 @@ export default function Home() {
                       }
                     }}
                    />
-                   <div className="flex items-center gap-2">
-                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={14} />
+                   <div className="absolute top-0 right-0 flex items-center gap-1">
+                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-6 h-6 shrink-0">
+                       <X size={12} />
                      </Button>
-                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={14} />
+                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-6 h-6 shrink-0">
+                       <Check size={12} />
                      </Button>
                    </div>
                  </div>
@@ -410,5 +410,3 @@ export default function Home() {
     </TooltipProvider>
   );
 }
-
-    
