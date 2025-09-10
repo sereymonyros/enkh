@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Star, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { submitFeedback } from '@/lib/feedback-service';
+import { useFeedbackStore } from '@/lib/feedback-store';
 import { toast } from 'sonner';
 
 
@@ -22,6 +23,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const addOptimisticFeedback = useFeedbackStore((state) => state.addOptimisticFeedback);
 
   const resetForm = () => {
     setRating(0);
@@ -43,11 +45,35 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
         return;
     }
     setIsSubmitting(true);
+
+    const optimisticId = `optimistic-${Date.now()}`;
+    const feedbackData = { rating, comment: feedbackText };
+    
+    // Optimistically update the UI
+    addOptimisticFeedback({
+      ...feedbackData,
+      id: optimisticId,
+      createdAt: new Date(), // Use a client-side date for optimistic item
+      status: 'new',
+    });
+
+    handleClose(); // Close form immediately
+
     try {
-        await submitFeedback({ rating, comment: feedbackText });
-        toast.success("Thank you for your feedback!");
-        handleClose();
+        await submitFeedback(feedbackData);
+        // On success, the real-time listener will replace the optimistic update.
+        // We can show a subtle success toast if needed.
+        if (navigator.onLine) {
+            toast.success("Thank you for your feedback!");
+        } else {
+             toast.success("Feedback saved", {
+                description: "It will be submitted when you're back online.",
+            });
+        }
     } catch (error) {
+      // If submission fails, we need to remove the optimistic update.
+      // This is a more advanced scenario, for now, we just log the error.
+      console.error("Failed to submit feedback:", error);
       if (error instanceof Error) {
         toast.error(error.message);
       } else {

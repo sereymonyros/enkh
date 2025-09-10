@@ -1,9 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +19,12 @@ type Feedback = {
   createdAt: Timestamp;
   status: 'new' | 'viewed' | 'in-progress' | 'fixed';
 };
+
+// A type guard to check if an object is a Firestore Timestamp
+function isTimestamp(date: any): date is Timestamp {
+  return date && typeof date.toDate === 'function';
+}
+
 
 const StatusBadge = ({ status }: { status: Feedback['status'] }) => {
   const variant = {
@@ -48,12 +55,13 @@ const RatingStars = ({ rating }: { rating: number }) => {
 }
 
 export function FeedbackTable() {
-  const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+  const [serverFeedback, setServerFeedback] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const optimisticFeedback = useFeedbackStore((state) => state.optimisticFeedback);
 
   useEffect(() => {
-    const feedbackCollection = collection(db, 'feedbacks');
-    const q = query(feedbackCollection, orderBy('createdAt', 'desc'));
+    const feedbacksCollection = collection(db, 'feedbacks');
+    const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
       q,
@@ -62,7 +70,7 @@ export function FeedbackTable() {
           id: doc.id,
           ...doc.data(),
         } as Feedback));
-        setFeedbackList(feedbacks);
+        setServerFeedback(feedbacks);
         setIsLoading(false);
       },
       (error) => {
@@ -75,6 +83,26 @@ export function FeedbackTable() {
     return () => unsubscribe();
   }, []);
 
+  const combinedFeedback = useMemo(() => {
+    const serverIds = new Set(serverFeedback.map(f => f.id));
+    // Filter out optimistic items that have been replaced by server data
+    const filteredOptimistic = optimisticFeedback.filter(
+        (of) => !serverFeedback.some(sf => sf.comment === of.comment && sf.rating === of.rating)
+    );
+
+    const allFeedback = [...filteredOptimistic, ...serverFeedback];
+
+    // Sort the combined list
+    allFeedback.sort((a, b) => {
+      const dateA = isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt;
+      const dateB = isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt;
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return allFeedback;
+  }, [serverFeedback, optimisticFeedback]);
+
+
   if (isLoading) {
     return (
         <div className="space-y-2">
@@ -85,7 +113,7 @@ export function FeedbackTable() {
     )
   }
 
-  if (feedbackList.length === 0) {
+  if (combinedFeedback.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No feedback submitted yet.</p>;
   }
 
@@ -101,8 +129,8 @@ export function FeedbackTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {feedbackList.map((feedback) => (
-            <TableRow key={feedback.id}>
+          {combinedFeedback.map((feedback) => (
+            <TableRow key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
               <TableCell>
                 <RatingStars rating={feedback.rating} />
               </TableCell>
@@ -111,7 +139,7 @@ export function FeedbackTable() {
                 <StatusBadge status={feedback.status} />
               </TableCell>
               <TableCell className="text-right text-muted-foreground">
-                {feedback.createdAt ? formatDistanceToNow(feedback.createdAt.toDate(), { addSuffix: true }) : '-'}
+                {feedback.createdAt ? formatDistanceToNow(isTimestamp(feedback.createdAt) ? feedback.createdAt.toDate() : feedback.createdAt, { addSuffix: true }) : '-'}
               </TableCell>
             </TableRow>
           ))}
