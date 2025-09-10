@@ -77,7 +77,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
             />
 
             {/* Submit Button */}
-            <div className="flex justify-start">
+            <div className="flex justify-end">
               <Button onClick={handleSubmit} variant="ghost" size="icon">
                 <Send />
               </Button>
