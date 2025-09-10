@@ -269,6 +269,10 @@ export default function Home() {
                         e.preventDefault();
                         submitEdit();
                       }
+                      if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelEditing();
+                      }
                     }}
                    />
                    <div className="flex items-center gap-2">
@@ -379,5 +383,3 @@ export default function Home() {
     </TooltipProvider>
   );
 }
-
-    
