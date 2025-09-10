@@ -281,8 +281,8 @@ export default function Home() {
         }
 
       return (
-        <div key={item.id} className="flex justify-start items-start gap-3">
-           <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+        <div key={item.id} className="flex flex-col justify-start items-start gap-2">
+           <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
            <p className="text-lg">{item.translatedText}</p>
         </div>
       );
