@@ -324,7 +324,7 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-[#131314] text-white flex flex-col font-body antialiased">
-        <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto">
+        <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto pb-48">
            <ScrollArea className="w-full max-w-2xl flex-1 no-scrollbar" viewportRef={scrollAreaViewportRef}>
              <div className="flex flex-col gap-6 pb-4">
               {/* History */}
@@ -340,50 +340,48 @@ export default function Home() {
           </ScrollArea>
           </main>
           {/* Input Bar */}
-           <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex flex-col gap-3">
-            <div className={cn(
-                "bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2",
-                isShaking ? 'animate-shake' : ''
-              )}>
-              <Textarea
-                placeholder="Enter text to translate..."
-                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleTranslate(inputText);
-                  }
-                }}
-                disabled={editingItemId !== null}
-              />
-            </div>
-             <div className="flex justify-center items-center gap-4">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
-                      onClick={() => handleTranslate(inputText)}
-                      disabled={isLoading || editingItemId !== null}
-                    >
-                      <Send size={24} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Translate</p>
-                  </TooltipContent>
-                </Tooltip>
+           <div className="fixed bottom-0 left-0 right-0 z-10 bg-black/60 backdrop-blur-sm">
+             <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
+                <div className={cn(
+                    "bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2",
+                    isShaking ? 'animate-shake' : ''
+                  )}>
+                  <Textarea
+                    placeholder="Enter text to translate..."
+                    className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleTranslate(inputText);
+                      }
+                    }}
+                    disabled={editingItemId !== null}
+                  />
+                </div>
+                 <div className="flex justify-center items-center gap-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
+                          onClick={() => handleTranslate(inputText)}
+                          disabled={isLoading || editingItemId !== null}
+                        >
+                          <Send size={24} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Translate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
               </div>
           </div>
       </div>
     </TooltipProvider>
   );
 }
-
-    
-
-    
