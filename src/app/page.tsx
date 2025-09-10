@@ -327,7 +327,7 @@ export default function Home() {
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
           <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                   <Copy size={14} />
