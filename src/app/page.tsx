@@ -50,6 +50,7 @@ export default function Home() {
     if (!trimmedInput) return;
 
     setIsLoading(true);
+    setInputText(''); // Clear input immediately
 
     try {
       // --- Step 1: Detect the language ---
@@ -92,7 +93,6 @@ export default function Home() {
             targetLanguage: targetLang,
           };
           setTranslationHistory(prev => [newHistoryItem, ...prev]);
-          setInputText('');
           setIsLoading(false);
           console.log(
             '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.'
@@ -124,7 +124,6 @@ export default function Home() {
       };
 
       setTranslationHistory(prev => [newHistoryItem, ...prev]);
-      setInputText(''); // Clear input after successful translation
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
       console.log(
@@ -185,10 +184,10 @@ export default function Home() {
                {isLoading && (
                  <div className="w-full">
                     <div className="flex flex-col gap-4">
-                      {/* User's query */}
+                      {/* User's query placeholder - shows the text being translated */}
                       <div className="flex justify-end">
                         <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
-                           <p className="text-lg text-white/80">{inputText}</p>
+                           <p className="text-lg text-white/80">{translationHistory[0]?.originalText || inputText}</p>
                         </div>
                       </div>
                       {/* AI's response placeholder */}
