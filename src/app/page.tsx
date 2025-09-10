@@ -334,12 +334,13 @@ export default function Home() {
             </Button>
             <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
-                 <div className="relative">
+                 <div className="relative border border-blue-400 p-1.5 rounded-2xl">
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
                      className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 p-0 pr-16"
                      autoFocus
+                     rows={1}
                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -384,11 +385,11 @@ export default function Home() {
                 <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                     <Copy size={14} />
                 </Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8">
+                <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
                     <Volume2 size={14} />
                 </Button>
                 {item.fromCache && (
-                  <Button variant="ghost" size="icon" className="w-8 h-8">
+                  <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
                     <Database size={14} />
                   </Button>
                 )}
@@ -508,6 +509,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+    
+
     
 
     
