@@ -404,7 +404,7 @@ export default function Home() {
                 isShaking ? 'animate-shake' : ''
               )}>
               <Textarea
-                placeholder="Enter text to translate..."
+                placeholder="Enter text to translate... / បញ្ចូលអត្ថបទដើម្បីបកប្រែ..."
                 className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
