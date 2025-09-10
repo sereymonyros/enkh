@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -45,6 +45,9 @@ export default function Home() {
   const { toast } = useToast();
   const [isShaking, setIsShaking] = useState(false);
 
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editedText, setEditedText] = useState('');
+
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -62,8 +65,8 @@ export default function Home() {
     scrollToBottom();
   }, [translationHistory, isLoading]);
 
-  const handleTranslate = useCallback(async () => {
-    const trimmedInput = inputText.trim();
+  const handleTranslate = useCallback(async (textToTranslate: string, existingItemId?: number) => {
+    const trimmedInput = textToTranslate.trim();
     if (!trimmedInput) {
        setIsShaking(true);
       setTimeout(() => setIsShaking(false), 820); // Duration of the shake animation
@@ -72,17 +75,36 @@ export default function Home() {
 
     setIsLoading(true);
     setInputText(''); // Clear input immediately
+    setEditingItemId(null); // Exit editing mode
 
-    // Add user's message to history immediately
-    const userMessage: HistoryItem = {
-      id: Date.now(),
-      originalText: trimmedInput,
-      translatedText: '', // No translation for user message
-      sourceLanguage: 'en', // Placeholder, will be detected
-      targetLanguage: 'km', // Placeholder
-      isUser: true,
-    };
-    setTranslationHistory(prev => [...prev, userMessage]);
+    // If it's a new message, add user's message to history.
+    // If it's an edit, we'll update it later, but remove the old AI response.
+    if (!existingItemId) {
+        const userMessage: HistoryItem = {
+          id: Date.now(),
+          originalText: trimmedInput,
+          translatedText: '', // No translation for user message
+          sourceLanguage: 'en', // Placeholder, will be detected
+          targetLanguage: 'km', // Placeholder
+          isUser: true,
+        };
+        setTranslationHistory(prev => [...prev, userMessage]);
+    } else {
+        // Find the index of the user message and the AI message that follows it
+        const userMessageIndex = translationHistory.findIndex(item => item.id === existingItemId);
+        if (userMessageIndex !== -1) {
+            // Update the original text
+            const updatedHistory = [...translationHistory];
+            updatedHistory[userMessageIndex].originalText = trimmedInput;
+            
+            // Remove the old AI response if it exists
+            if (userMessageIndex + 1 < updatedHistory.length && !updatedHistory[userMessageIndex + 1].isUser) {
+                updatedHistory.splice(userMessageIndex + 1, 1);
+            }
+
+            setTranslationHistory(updatedHistory);
+        }
+    }
 
 
     try {
@@ -98,8 +120,9 @@ export default function Home() {
             'Could not determine the input language. Please use English or Khmer.',
           variant: 'destructive',
         });
-        // Remove the user message if detection fails
-        setTranslationHistory(prev => prev.slice(0, -1));
+        if (!existingItemId) {
+            setTranslationHistory(prev => prev.slice(0, -1));
+        }
         setIsLoading(false);
         return;
       }
@@ -120,7 +143,7 @@ export default function Home() {
       if (cached) {
         const age = Date.now() - cached.createdAt.getTime();
         if (age < LOCAL_CACHE_STALE_MS) {
-           const aiMessage: HistoryItem = {
+            const aiMessage: HistoryItem = {
             id: Date.now() + 1, // Ensure unique ID
             originalText: trimmedInput,
             translatedText: cached.translatedText,
@@ -190,22 +213,73 @@ export default function Home() {
         variant: 'destructive',
       });
       // Also remove user message on error
-      setTranslationHistory(prev => prev.slice(0, -1));
+      if (!existingItemId) {
+        setTranslationHistory(prev => prev.slice(0, -1));
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, toast]);
+  }, [toast, translationHistory]);
 
-  const renderHistoryItem = (item: HistoryItem) => {
+
+  const startEditing = (item: HistoryItem) => {
+    setEditingItemId(item.id);
+    setEditedText(item.originalText);
+  };
+
+  const cancelEditing = () => {
+    setEditingItemId(null);
+    setEditedText('');
+  };
+
+  const submitEdit = () => {
+    if (editingItemId) {
+      handleTranslate(editedText, editingItemId);
+    }
+  };
+
+
+  const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
-      return (
-        <div key={item.id} className="flex justify-end">
-          <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
-            <p className="text-lg text-white/80">{item.originalText}</p>
+        const isEditing = editingItemId === item.id;
+        return (
+          <div key={item.id} className="group flex justify-end items-center gap-2">
+            <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => startEditing(item)}>
+                 <Pencil size={18} />
+            </Button>
+            <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
+             {isEditing ? (
+                <div className="flex flex-col gap-2">
+                   <Textarea
+                     value={editedText}
+                     onChange={(e) => setEditedText(e.target.value)}
+                     className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 text-white/80"
+                     autoFocus
+                   />
+                   <div className="flex justify-end gap-2">
+                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8">
+                       <X size={18} />
+                     </Button>
+                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8">
+                       <Check size={18} />
+                     </Button>
+                   </div>
+                 </div>
+              ) : (
+                <p className="text-lg text-white/80">{item.originalText}</p>
+              )}
+            </div>
           </div>
-        </div>
-      );
+        );
     } else {
+        // Check if the previous message was a user message that is currently loading its translation
+        const prevItem = translationHistory[index - 1];
+        const isPrevItemLoading = prevItem && prevItem.isUser && isLoading && index === translationHistory.length -1;
+        
+        if (isPrevItemLoading) {
+            return null; // Don't render the AI bubble if the previous user message is what's loading
+        }
+
       return (
         <div key={item.id} className="flex justify-start items-start gap-3">
            <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
@@ -226,7 +300,7 @@ export default function Home() {
               {translationHistory.map(renderHistoryItem)}
 
               {/* Loading Indicator */}
-              {isLoading && translationHistory[translationHistory.length-1]?.isUser && (
+              {isLoading && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
                  <div className="flex justify-start items-start gap-3">
                    <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
                  </div>
@@ -249,9 +323,10 @@ export default function Home() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    handleTranslate();
+                    handleTranslate(inputText);
                   }
                 }}
+                disabled={editingItemId !== null}
               />
             </div>
              <div className="flex justify-center items-center gap-4">
@@ -261,8 +336,8 @@ export default function Home() {
                       variant="ghost"
                       size="icon"
                       className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
-                      onClick={handleTranslate}
-                      disabled={isLoading}
+                      onClick={() => handleTranslate(inputText)}
+                      disabled={isLoading || editingItemId !== null}
                     >
                       <Send size={24} />
                     </Button>
@@ -277,3 +352,5 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
