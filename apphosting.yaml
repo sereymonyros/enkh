@@ -13,6 +13,7 @@ runConfig:
   # as environment variables. You must create these secrets in
   # Google Cloud Secret Manager.
   secrets:
+    - secret: GEMINI_API_KEY
     - secret: NEXT_PUBLIC_FIREBASE_API_KEY
     - secret: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
     - secret: NEXT_PUBLIC_FIREBASE_PROJECT_ID

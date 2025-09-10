@@ -3,6 +3,8 @@ import {initializeApp, getApp, getApps} from 'firebase/app';
 import {getFirestore} from 'firebase/firestore';
 
 // Your web app's Firebase configuration
+// This configuration is PUBLIC and safe to expose in client-side code.
+// Security is handled by Firebase Security Rules on the backend.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -14,6 +16,7 @@ const firebaseConfig = {
 
 
 // Initialize Firebase
+// This pattern prevents re-initializing the app on every hot-reload.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
