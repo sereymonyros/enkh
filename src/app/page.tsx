@@ -175,7 +175,7 @@ export default function Home() {
           </div>
 
           {/* Input Bar */}
-          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-lg border border-white/20 rounded-3xl p-2 flex items-end gap-2">
+          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-lg border border-white/20 rounded-3xl p-2 flex items-end gap-2 mb-20">
             <Textarea
               placeholder="Enter text to translate..."
               className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
@@ -189,6 +189,10 @@ export default function Home() {
                 }
               }}
             />
+          </div>
+        </main>
+        {/* Centered Action Button */}
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -205,8 +209,7 @@ export default function Home() {
                 <p>Translate</p>
               </TooltipContent>
             </Tooltip>
-          </div>
-        </main>
+        </div>
       </div>
     </TooltipProvider>
   );
