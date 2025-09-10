@@ -53,7 +53,7 @@ const normalizeText = (text: string) => {
 };
 
 export default function Home() {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState('Hello');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
