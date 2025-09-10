@@ -10,7 +10,7 @@ export type FeedbackData = {
 };
 
 /**
- * Saves a new feedback entry to the 'feedback' collection in Firestore.
+ * Saves a new feedback entry to the 'feedbacks' collection in Firestore.
  *
  * @param feedbackData An object containing the rating and comment.
  * @returns The ID of the newly created document.
@@ -22,7 +22,7 @@ export async function submitFeedback(feedbackData: FeedbackData): Promise<string
   }
 
   try {
-    const feedbackCollection = collection(db, 'feedback');
+    const feedbackCollection = collection(db, 'feedbacks');
     const docRef = await addDoc(feedbackCollection, {
       ...feedbackData,
       createdAt: serverTimestamp(),

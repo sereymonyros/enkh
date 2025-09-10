@@ -52,7 +52,7 @@ export function FeedbackTable() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const feedbackCollection = collection(db, 'feedback');
+    const feedbackCollection = collection(db, 'feedbacks');
     const q = query(feedbackCollection, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
