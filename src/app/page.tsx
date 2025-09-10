@@ -169,23 +169,6 @@ export default function Home() {
         <main className="flex-1 flex flex-col items-center justify-center p-4 gap-4 relative">
           {/* Top-down text areas */}
           <div className="w-full max-w-2xl flex-1 flex flex-col gap-4 justify-center">
-            {/* Input Text Area */}
-            <div className="relative">
-               <Textarea
-                placeholder="Enter text to translate..."
-                className="bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl min-h-[200px] text-lg resize-none w-full focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-white/50"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-              />
-               {detectedLang && (
-                <div className="absolute bottom-3 right-3 text-white/50 text-xs flex items-center gap-1">
-                  <span>{sourceLanguageName}</span>
-                  <ArrowRight size={12} />
-                  <span>{targetLanguageName}</span>
-                </div>
-              )}
-            </div>
-
             {/* Output Text Area */}
             <div className="relative">
               <Textarea
@@ -200,6 +183,23 @@ export default function Home() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span>Translating...</span>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input Text Area */}
+            <div className="relative">
+               <Textarea
+                placeholder="Enter text to translate..."
+                className="bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl min-h-[200px] text-lg resize-none w-full focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-white/50"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+               {detectedLang && (
+                <div className="absolute bottom-3 right-3 text-white/50 text-xs flex items-center gap-1">
+                  <span>{sourceLanguageName}</span>
+                  <ArrowRight size={12} />
+                  <span>{targetLanguageName}</span>
                 </div>
               )}
             </div>
