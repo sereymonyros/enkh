@@ -198,7 +198,7 @@ export default function Home() {
                {isLoading && (
                  <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="text-left flex items-center">
+                      <div className="text-left flex flex-col items-start justify-center">
                         <Sparkles className="h-6 w-6 animate-spin text-white/80" />
                       </div>
                       <div className="text-right">
