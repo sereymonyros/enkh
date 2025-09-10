@@ -64,6 +64,7 @@ export default function Home() {
   const [editedText, setEditedText] = useState('');
 
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+  const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -82,6 +83,19 @@ export default function Home() {
     }, 0);
   }, [translationHistory, isLoading]);
 
+  const handleCancel = () => {
+    console.log('User cancelled translation.');
+    translationRequestRef.current.isCancelled = true;
+    setIsLoading(false);
+    // Remove the last user message if it's there
+    setTranslationHistory(prev => {
+        if(prev.length > 0 && prev[prev.length-1].isUser) {
+            return prev.slice(0, -1);
+        }
+        return prev;
+    });
+  };
+
   const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, editedMessageId: number | null = null) => {
     const trimmedInput = textToTranslate.trim();
     if (!trimmedInput) {
@@ -93,6 +107,7 @@ export default function Home() {
     }
 
     setIsLoading(true);
+    translationRequestRef.current.isCancelled = false;
     if (!isEditing) {
         setInputText('Hello');
     }
@@ -116,6 +131,8 @@ export default function Home() {
       // --- Step 1: Detect the language ---
       console.log('1. DETECT: Detecting input language...');
       const detectionResult = await detectLanguage({ text: trimmedInput });
+      if (translationRequestRef.current.isCancelled) return;
+      
       const currentDetectedLang = detectionResult.language;
 
       if (currentDetectedLang === 'unknown') {
@@ -166,6 +183,7 @@ export default function Home() {
         } else {
             console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.');
             const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
+            if (translationRequestRef.current.isCancelled) return;
             translatedText = result.translatedText;
             fromCache = result.fromCache;
         }
@@ -174,6 +192,7 @@ export default function Home() {
          // --- LAYER 3: CALL SERVER (FIRESTORE/API) ---
         console.log('3. SERVER CHECK: Calling server-side flow...');
         const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
+        if (translationRequestRef.current.isCancelled) return;
         translatedText = result.translatedText;
         fromCache = result.fromCache;
 
@@ -184,6 +203,8 @@ export default function Home() {
         await saveTranslationToDb(normalizedTranslatedText, targetLang, sourceLang, trimmedInput);
       }
       
+      if (translationRequestRef.current.isCancelled) return;
+
       const aiMessage: HistoryItem = {
         id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1, // Ensure unique ID
         originalText: trimmedInput,
@@ -210,6 +231,7 @@ export default function Home() {
 
 
     } catch (error) {
+      if (translationRequestRef.current.isCancelled) return;
       console.error('Translation error:', error);
       toast({
         title: 'Translation Failed',
@@ -229,7 +251,9 @@ export default function Home() {
             setTranslationHistory(prev => prev.slice(0, -1));
         }
     } finally {
-      setIsLoading(false);
+      if (!translationRequestRef.current.isCancelled) {
+        setIsLoading(false);
+      }
       setEditingItemId(null);
       setEditedText("");
     }
@@ -368,7 +392,7 @@ export default function Home() {
     <SidebarProvider defaultOpen={false}>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
-        {/* <WelcomeToast historyLength={translationHistory.length} /> */}
+        <WelcomeToast historyLength={translationHistory.length} />
         {!videoFinished && (
           <video
             className="background-video"
@@ -447,6 +471,7 @@ export default function Home() {
                 <Button
                       size="icon"
                       className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
+                      onClick={handleCancel}
                     >
                       <StopCircle size={24} />
                     </Button>
@@ -467,6 +492,8 @@ export default function Home() {
   );
 }
 
+
+    
 
     
 
