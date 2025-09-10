@@ -39,7 +39,7 @@ const normalizeText = (text: string) => {
 };
 
 export default function Home() {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState('Hello Cambodia');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
@@ -383,3 +383,5 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
