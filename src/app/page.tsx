@@ -279,6 +279,9 @@ export default function Home() {
   };
 
   const cancelEditing = () => {
+    if (historyBeforeEdit) {
+        setTranslationHistory(historyBeforeEdit);
+    }
     setEditingItemId(null);
     setEditedText('');
     setHistoryBeforeEdit(null);
@@ -326,7 +329,7 @@ export default function Home() {
         const isEditing = editingItemId === item.id;
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
-            <Button variant="ghost" size="icon" className="transition-opacity w-8 h-8" onClick={() => startEditing(item)}>
+            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => startEditing(item)}>
                  <Pencil size={14} />
             </Button>
             <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
@@ -378,15 +381,15 @@ export default function Home() {
             <div className="flex items-center">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
-                    <Copy size={14} className="text-blue-400/50" />
+                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
+                    <Copy size={14} />
                 </Button>
-                <Button variant="ghost" size="icon" className="transition-opacity w-8 h-8">
-                    <Volume2 size={14} className="text-blue-400/50" />
+                <Button variant="ghost" size="icon" className="w-8 h-8">
+                    <Volume2 size={14} />
                 </Button>
                 {item.fromCache && (
-                  <Button variant="ghost" size="icon" className="transition-opacity w-8 h-8">
-                    <Database size={14} className="text-blue-400/50" />
+                  <Button variant="ghost" size="icon" className="w-8 h-8">
+                    <Database size={14} />
                   </Button>
                 )}
                </div>
