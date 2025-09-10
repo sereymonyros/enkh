@@ -249,18 +249,18 @@ export default function Home() {
             </Button>
             <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-4">
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 text-white/80"
+                     className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0"
                      autoFocus
                    />
-                   <div className="flex justify-end gap-2">
-                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8">
+                   <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
                        <X size={18} />
                      </Button>
-                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8">
+                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
                        <Check size={18} />
                      </Button>
                    </div>
