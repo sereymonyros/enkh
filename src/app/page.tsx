@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, ArrowUp, Trash2 } from 'lucide-react';
+import { Loader2, ArrowUpSquare, Trash2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { clearTranslations } from '@/ai/flows/clear-translations';
@@ -197,12 +197,11 @@ export default function Home() {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="bg-white/10 rounded-full w-12 h-12 hover:bg-white/20 text-white shrink-0"
+                  className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-2xl w-auto h-auto px-4 py-2"
                   onClick={handleTranslate}
                   disabled={isLoading || !inputText.trim()}
                 >
-                  <ArrowUp size={24} />
+                  <ArrowUpSquare size={28} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
