@@ -5,6 +5,11 @@
 # https://firebase.google.com/docs/app-hosting/locations
 location: asia-southeast1
 
+# Grant the service account the "AI Platform User" role to allow access to Gemini.
+serviceAccount: !gcp/serviceAccount
+  roles:
+  - roles/aiplatform.user
+
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
@@ -20,9 +25,3 @@ runConfig:
     - secret: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
     - secret: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     - secret: NEXT_PUBLIC_FIREBASE_APP_ID
-
-# To connect to a VPC network, specify the connector ID.
-# vpcConnector: 'my-connector'
-
-# To grant IAM roles to your backend, specify the service account.
-# serviceAccount: 'my-service-account'
