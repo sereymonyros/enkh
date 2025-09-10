@@ -368,7 +368,7 @@ export default function Home() {
     <SidebarProvider defaultOpen={false}>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
-        <WelcomeToast historyLength={translationHistory.length} />
+        {/* <WelcomeToast historyLength={translationHistory.length} /> */}
         {!videoFinished && (
           <video
             className="background-video"
@@ -396,11 +396,7 @@ export default function Home() {
         </Sidebar>
         <SidebarInset>
         <div className='relative flex flex-col flex-1'>
-          <div className="absolute top-4 right-4 z-20">
-            <SidebarTrigger variant="ghost" size="icon" className="text-blue-400">
-                <Menu />
-            </SidebarTrigger>
-          </div>
+          
         <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
           <div className="flex flex-col gap-6 pb-48 pt-16">
             {/* History */}
@@ -415,10 +411,10 @@ export default function Home() {
           </div>
         </ScrollArea>
         {/* Input Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/50 backdrop-blur-sm">
-          <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
+        <div className="fixed bottom-0 left-0 right-0 z-10 bg-transparent pointer-events-none">
+          <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto">
             <div className={cn(
-                "border-2 border-blue-400 rounded-full p-2 flex items-center gap-2",
+                "border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm",
                 isShaking ? 'animate-shake' : ''
               )}>
               <Textarea
@@ -437,24 +433,21 @@ export default function Home() {
               />
             </div>
               <div className="flex justify-center items-center gap-4">
-                <Tooltip>
-                  <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
                       size="icon"
-                      className="bg-card/50 text-blue-400 rounded-full w-12 h-12 hover:text-blue-500"
+                      className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
                       onClick={() => handleTranslate(inputText)}
                       disabled={isLoading || editingItemId !== null}
                     >
                       <Send size={24} />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Translate</p>
-                  </TooltipContent>
-                </Tooltip>
               </div>
           </div>
+           <div className="fixed bottom-4 left-4 z-20 pointer-events-auto">
+              <SidebarTrigger variant="ghost" size="icon" className="text-blue-400">
+                  <Menu />
+              </SidebarTrigger>
+            </div>
         </div>
         </div>
         </SidebarInset>
@@ -463,3 +456,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
