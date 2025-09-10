@@ -390,7 +390,7 @@ export default function Home() {
         <SidebarInset>
         <div className='relative flex flex-col flex-1'>
           <div className="absolute top-4 right-4 z-20">
-            <SidebarTrigger variant="ghost" size="icon">
+            <SidebarTrigger variant="ghost" size="icon" className="text-blue-400">
                 <Menu />
             </SidebarTrigger>
           </div>
