@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -28,6 +28,7 @@ type HistoryItem = {
   sourceLanguage: 'en' | 'km';
   targetLanguage: 'en' | 'km';
   isUser: boolean;
+  fromCache?: boolean;
 };
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
@@ -148,16 +149,19 @@ export default function Home() {
       );
 
       let translatedText: string;
+      let fromCache = false;
 
       if (cached) {
         const age = Date.now() - cached.createdAt.getTime();
         if (age < LOCAL_CACHE_STALE_MS) {
            console.log( '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.');
            translatedText = cached.translatedText;
+           fromCache = true;
         } else {
             console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.');
             const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
             translatedText = result.translatedText;
+            fromCache = result.fromCache;
         }
       } else {
         console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
@@ -165,6 +169,7 @@ export default function Home() {
         console.log('3. SERVER CHECK: Calling server-side flow...');
         const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
         translatedText = result.translatedText;
+        fromCache = result.fromCache;
 
          // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
         console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
@@ -180,6 +185,7 @@ export default function Home() {
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
         isUser: false,
+        fromCache,
       };
 
       if(isEditing){
@@ -326,6 +332,18 @@ export default function Home() {
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                   <Copy size={14} />
                </Button>
+               {item.fromCache && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
+                            <Database size={12} />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>From Cache</p>
+                    </TooltipContent>
+                </Tooltip>
+               )}
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
                   <Volume2 size={14} />
                </Button>

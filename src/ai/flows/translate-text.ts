@@ -39,6 +39,7 @@ export type TranslateTextInput = z.infer<typeof TranslateTextInputSchema>;
 
 const TranslateTextOutputSchema = z.object({
   translatedText: z.string().describe('The translated text.'),
+  fromCache: z.boolean().describe('Indicates if the translation was from the cache.'),
 });
 export type TranslateTextOutput = z.infer<typeof TranslateTextOutputSchema>;
 
@@ -52,7 +53,9 @@ const prompt = ai.definePrompt({
     schema: TranslateTextInputSchema,
   },
   output: {
-    schema: TranslateTextOutputSchema,
+    schema: z.object({
+      translatedText: z.string().describe('The translated text.'),
+    }),
   },
   prompt: `You are a translation expert. You will translate the given text from the source language to the target language.
 
@@ -79,7 +82,7 @@ const translateTextFlow = ai.defineFlow(
     const normalizedText = normalizeText(input.text);
     if (!normalizedText) {
       // Handle empty input gracefully.
-      return { translatedText: '' };
+      return { translatedText: '', fromCache: false };
     }
 
     let staleDocId: string | null = null;
@@ -105,7 +108,7 @@ const translateTextFlow = ai.defineFlow(
         // If the cache entry is fresh, return it immediately.
         if (age < CACHE_STALE_MS) {
           console.log('      ✅ FIRESTORE HIT (FRESH): Found fresh translation in Firestore. Flow complete.');
-          return {translatedText: data.translatedText};
+          return {translatedText: data.translatedText, fromCache: true};
         } else {
           // If the entry is stale, mark it for update instead of creating a new one.
           console.log('      ⚠️ FIRESTORE HIT (STALE): Translation is older than 30 days. Will refresh.');
@@ -181,6 +184,6 @@ const translateTextFlow = ai.defineFlow(
     }
 
     // 5. RETURN RESULT
-    return output;
+    return { translatedText: output.translatedText, fromCache: false };
   }
 );
