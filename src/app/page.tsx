@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Sparkles, ArrowUpSquare, Trash2 } from 'lucide-react';
+import { Sparkles, ArrowUpSquare } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { clearTranslations } from '@/ai/flows/clear-translations';
@@ -159,92 +159,83 @@ export default function Home() {
     }
   }, [inputText, toast]);
 
-  const handleClearFirestore = async () => {
-    try {
-      const result = await clearTranslations();
-      toast({
-        title: 'Firestore Cache Cleared',
-        description: `${result.deletedCount} translation(s) have been deleted from the server.`,
-      });
-    } catch (error) {
-      console.error('Error clearing Firestore:', error);
-      toast({
-        title: 'Clear Failed',
-        description: 'An error occurred while clearing the Firestore cache.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <TooltipProvider>
-      <div className="dark min-h-screen w-full bg-gradient-to-b from-[#1c1c1e] via-[#1c1c1e] to-[#1d2a57] text-white flex flex-col font-body antialiased">
-        <main className="flex-1 flex flex-col items-center justify-between p-4 gap-4 relative">
+      <div className="dark min-h-screen w-full bg-[#131314] text-white flex flex-col font-body antialiased">
+        <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto">
           <ScrollArea className="w-full max-w-2xl flex-1">
-            <div className="flex flex-col-reverse gap-6 pb-24">
+            <div className="flex flex-col-reverse gap-6 pb-4">
               {/* History */}
               {translationHistory.map(item => (
-                <div key={item.id}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-left">
-                      <p className="text-lg">{item.translatedText}</p>
+                <div key={item.id} className="w-full">
+                  <div className="flex flex-col gap-4">
+                    {/* User's query */}
+                    <div className="flex justify-end">
+                      <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
+                        <p className="text-lg text-white/80">{item.originalText}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                       <p className="text-lg text-white/80">{item.originalText}</p>
+                    {/* AI's response */}
+                    <div className="flex justify-start items-start gap-3">
+                       <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+                       <p className="text-lg">{item.translatedText}</p>
                     </div>
                   </div>
                 </div>
               ))}
                {isLoading && (
-                 <div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-left flex flex-col items-start justify-center">
-                        <Sparkles className="h-6 w-6 animate-spin text-white/80" />
+                 <div className="w-full">
+                    <div className="flex flex-col gap-4">
+                      {/* User's query */}
+                      <div className="flex justify-end">
+                        <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
+                           <p className="text-lg text-white/80">{inputText}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg text-white/80">{inputText}</p>
+                      {/* AI's response placeholder */}
+                      <div className="flex justify-start items-start gap-3">
+                         <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
                       </div>
                     </div>
                   </div>
                 )}
             </div>
           </ScrollArea>
-
+          </main>
           {/* Input Bar */}
-          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-lg border border-white/20 rounded-3xl p-2 flex items-end gap-2 mb-20">
-            <Textarea
-              placeholder="Enter text to translate..."
-              className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              rows={1}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleTranslate();
-                }
-              }}
-            />
+          <div className="w-full max-w-2xl mx-auto px-4 pb-4">
+            <div className="bg-[#1e1f20] border border-white/20 rounded-2xl p-2 flex items-end gap-2">
+              <Textarea
+                placeholder="Enter text to translate..."
+                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleTranslate();
+                  }
+                }}
+              />
+               <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-full w-10 h-10 shrink-0"
+                    onClick={handleTranslate}
+                    disabled={isLoading || !inputText.trim()}
+                  >
+                    <ArrowUpSquare size={20} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Translate</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </main>
-        {/* Centered Action Button */}
-        <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-2xl w-auto h-auto px-6 py-3"
-                  onClick={handleTranslate}
-                  disabled={isLoading || !inputText.trim()}
-                >
-                  <ArrowUpSquare size={32} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Translate</p>
-              </TooltipContent>
-            </Tooltip>
-        </div>
       </div>
     </TooltipProvider>
   );
