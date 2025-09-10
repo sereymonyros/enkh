@@ -62,6 +62,7 @@ export default function Home() {
 
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
+  const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
 
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -87,13 +88,23 @@ export default function Home() {
     console.log('User cancelled translation.');
     translationRequestRef.current.isCancelled = true;
     setIsLoading(false);
-    // Remove the last user message if it's there
-    setTranslationHistory(prev => {
-        if(prev.length > 0 && prev[prev.length-1].isUser) {
-            return prev.slice(0, -1);
-        }
-        return prev;
-    });
+
+    if (editingItemId && historyBeforeEdit) {
+        // If we were editing, restore the history to its pre-edit state.
+        setTranslationHistory(historyBeforeEdit);
+        setHistoryBeforeEdit(null);
+    } else {
+        // If it was a new message, remove the user's last message.
+        setTranslationHistory(prev => {
+            if (prev.length > 0 && prev[prev.length - 1].isUser) {
+                return prev.slice(0, -1);
+            }
+            return prev;
+        });
+    }
+    // Always reset editing state on cancel.
+    setEditingItemId(null);
+    setEditedText('');
   };
 
   const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, editedMessageId: number | null = null) => {
@@ -256,11 +267,13 @@ export default function Home() {
       }
       setEditingItemId(null);
       setEditedText("");
+      setHistoryBeforeEdit(null);
     }
-  }, [toast]);
+  }, [toast, historyBeforeEdit]);
 
 
   const startEditing = (item: HistoryItem) => {
+    setHistoryBeforeEdit(translationHistory);
     setEditingItemId(item.id);
     setEditedText(item.originalText);
   };
@@ -268,6 +281,7 @@ export default function Home() {
   const cancelEditing = () => {
     setEditingItemId(null);
     setEditedText('');
+    setHistoryBeforeEdit(null);
   };
 
   const submitEdit = () => {
@@ -392,7 +406,7 @@ export default function Home() {
     <SidebarProvider defaultOpen={false}>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
-        <WelcomeToast historyLength={translationHistory.length} />
+        {/* <WelcomeToast historyLength={translationHistory.length} /> */}
         {!videoFinished && (
           <video
             className="background-video"
