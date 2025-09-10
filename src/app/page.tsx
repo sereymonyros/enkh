@@ -275,14 +275,9 @@ export default function Home() {
 
 
   const startEditing = (item: HistoryItem) => {
-    setIsAnimatingOut(item.id);
     setHistoryBeforeEdit(translationHistory);
-
-    setTimeout(() => {
-        setEditingItemId(item.id);
-        setEditedText(item.originalText);
-        setIsAnimatingOut(null);
-    }, 500); 
+    setEditingItemId(item.id);
+    setEditedText(item.originalText);
   };
 
   const cancelEditing = () => {
@@ -334,7 +329,6 @@ export default function Home() {
   const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
         const isEditing = editingItemId === item.id;
-        const isAnimating = isAnimatingOut === item.id;
 
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
@@ -349,40 +343,44 @@ export default function Home() {
                 </Button>
                </div>
             </div>
-            <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
+            <div className={cn("bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
              {isEditing ? (
-                 <div className="relative border border-blue-400 p-1.5 rounded-2xl animate-in slide-in-from-right-4 duration-500">
-                   <Textarea
-                     value={editedText}
-                     onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 p-0 pr-16"
-                     autoFocus
-                     rows={1}
-                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        submitEdit();
-                      }
-                      if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cancelEditing();
-                      }
-                    }}
-                   />
-                   <div className="absolute top-0 right-0 flex items-center">
-                     <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={14} />
-                     </Button>
-                     <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={14} />
-                     </Button>
-                   </div>
+                 <div
+                    className={cn(
+                        "relative w-full transition-all duration-500 ease-in-out",
+                        isEditing ? "w-full opacity-100" : "w-0 opacity-0"
+                    )}
+                    >
+                    <div className="relative border border-blue-400 p-1.5 rounded-2xl overflow-hidden">
+                        <Textarea
+                            value={editedText}
+                            onChange={(e) => setEditedText(e.target.value)}
+                            className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 p-0 pr-16"
+                            autoFocus
+                            rows={1}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                submitEdit();
+                                }
+                                if (e.key === 'Escape') {
+                                e.preventDefault();
+                                cancelEditing();
+                                }
+                            }}
+                        />
+                        <div className="absolute top-0 right-0 flex items-center">
+                            <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
+                            <X size={14} />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
+                            <Check size={14} />
+                            </Button>
+                        </div>
+                    </div>
                  </div>
               ) : (
-                 <p className={cn(
-                    "text-lg transition-all duration-500",
-                     isAnimating && "animate-out slide-out-to-left-4"
-                  )}>
+                 <p className="text-lg">
                     {item.originalText}
                  </p>
               )}
