@@ -381,15 +381,15 @@ export default function Home() {
           <div className="flex flex-col gap-2 w-full">
             <div className="flex items-center">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
-               <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" onClick={() => handleCopyToClipboard(item.translatedText)}>
+               <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                     <Copy size={14} />
                 </Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" disabled={true}>
+                <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
                     <Volume2 size={14} />
                 </Button>
                 {item.fromCache && (
-                  <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" disabled={true}>
+                  <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
                     <Database size={14} />
                   </Button>
                 )}
@@ -514,3 +514,4 @@ export default function Home() {
     
 
     
+
