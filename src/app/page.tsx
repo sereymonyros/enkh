@@ -17,6 +17,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Define a type for a single history entry
+type HistoryItem = {
+  id: number;
+  originalText: string;
+  translatedText: string;
+  sourceLanguage: 'en' | 'km';
+  targetLanguage: 'en' | 'km';
+};
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
 const LOCAL_CACHE_STALE_MS =
@@ -30,6 +40,7 @@ export default function Home() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -76,7 +87,16 @@ export default function Home() {
       if (cached) {
         const age = Date.now() - cached.createdAt.getTime();
         if (age < LOCAL_CACHE_STALE_MS) {
+          const newHistoryItem: HistoryItem = {
+            id: Date.now(),
+            originalText: trimmedInput,
+            translatedText: cached.translatedText,
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+          };
           setOutputText(cached.translatedText);
+          setTranslationHistory(prev => [newHistoryItem, ...prev]);
+          setInputText('');
           setIsLoading(false);
           console.log(
             '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.'
@@ -98,7 +118,17 @@ export default function Home() {
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
       });
+
+      const newHistoryItem: HistoryItem = {
+        id: Date.now(),
+        originalText: trimmedInput,
+        translatedText: result.translatedText,
+        sourceLanguage: sourceLang,
+        targetLanguage: targetLang,
+      };
+
       setOutputText(result.translatedText);
+      setTranslationHistory(prev => [newHistoryItem, ...prev]);
       setInputText(''); // Clear input after successful translation
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
@@ -154,25 +184,42 @@ export default function Home() {
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gradient-to-b from-[#1c1c1e] via-[#1c1c1e] to-[#1d2a57] text-white flex flex-col font-body antialiased">
         <main className="flex-1 flex flex-col items-center justify-between p-4 gap-4 relative">
-          {/* Output Area */}
-          <div className="w-full max-w-2xl flex-1 flex flex-col gap-4 justify-center">
-            <div className="relative h-full">
-              <Textarea
-                placeholder="Translation"
-                readOnly
-                className="bg-transparent backdrop-blur-md border-none rounded-2xl h-full text-lg resize-none w-full focus-visible:ring-0"
-                value={outputText}
-              />
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    <span>Translating...</span>
+          <ScrollArea className="w-full max-w-2xl flex-1">
+            <div className="flex flex-col-reverse gap-6 pb-24">
+              {/* Current Translation Output */}
+              <div className="relative min-h-[100px]">
+                <Textarea
+                  placeholder="Translation"
+                  readOnly
+                  className="bg-transparent backdrop-blur-md border-none rounded-2xl h-full text-lg resize-none w-full focus-visible:ring-0"
+                  value={outputText}
+                />
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Translating...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* History */}
+              {translationHistory.map(item => (
+                <div key={item.id} className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-left">
+                      <p className="text-sm text-white/60 mb-1">{item.targetLanguage === 'en' ? 'English' : 'Khmer'}</p>
+                      <p className="text-lg">{item.translatedText}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-sm text-white/60 mb-1">{item.sourceLanguage === 'en' ? 'English' : 'Khmer'}</p>
+                       <p className="text-lg text-white/80">{item.originalText}</p>
+                    </div>
                   </div>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          </ScrollArea>
 
           {/* Input Bar */}
           <div className="w-full max-w-2xl bg-black/20 backdrop-blur-lg border border-white/20 rounded-3xl p-2 flex items-end gap-2 mb-20">
