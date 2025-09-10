@@ -261,36 +261,6 @@ export default function Home() {
                       variant="ghost"
                       size="icon"
                       className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
-                      disabled={true}
-                    >
-                      <Camera size={24} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Translate from image (coming soon)</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
-                      disabled={true}
-                    >
-                      <Mic size={24} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Translate from speech (coming soon)</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
                       onClick={handleTranslate}
                       disabled={isLoading}
                     >
