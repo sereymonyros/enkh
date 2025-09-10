@@ -332,12 +332,12 @@ export default function Home() {
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                   <Copy size={14} />
                </Button>
-               {item.fromCache && (
-                <Database size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-               )}
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
                   <Volume2 size={14} />
                </Button>
+               {item.fromCache && (
+                <Database size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+               )}
             </div>
              <div className="bg-[#1e1f20] rounded-tr-2xl rounded-b-2xl p-3">
                 <p className="text-lg">{item.translatedText}</p>
@@ -411,6 +411,8 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
 
     
 
