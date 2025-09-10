@@ -291,9 +291,9 @@ export default function Home() {
 
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
-          <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
           <div className="flex flex-col gap-2 w-full">
             <div className="flex items-center gap-2">
+               <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                   <Copy size={14} />
                </Button>
@@ -356,7 +356,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
+                      className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
                       onClick={() => handleTranslate(inputText)}
                       disabled={isLoading || editingItemId !== null}
                     >
