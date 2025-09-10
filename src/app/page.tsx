@@ -103,8 +103,8 @@ export default function Home() {
           id: Date.now(),
           originalText: trimmedInput,
           translatedText: '', // No translation for user message
-          sourceLanguage: 'en', // Placeholder, will be detected
-          targetLanguage: 'km', // Placeholder
+          sourceLanguage: 'en' | 'km', // Placeholder, will be detected
+          targetLanguage: 'en' | 'km', // Placeholder
           isUser: true,
         };
         // Use a function for setting state to get the most recent state
@@ -320,7 +320,7 @@ export default function Home() {
                    </div>
                  </div>
               ) : (
-                <p className="text-lg text-foreground/80">{item.originalText}</p>
+                <p className="text-lg">{item.originalText}</p>
               )}
             </div>
           </div>
