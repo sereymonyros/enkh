@@ -94,7 +94,7 @@ export default function Home() {
 
     setIsLoading(true);
     if (!isEditing) {
-        setInputText('');
+        setInputText('Hello');
     }
 
     // If it's a new message, add the user message to history.
@@ -466,6 +466,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
