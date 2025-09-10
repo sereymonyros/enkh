@@ -340,7 +340,7 @@ export default function Home() {
           </ScrollArea>
           </main>
           {/* Input Bar */}
-           <div className="fixed bottom-0 left-0 right-0 z-10 bg-[#0d0f19]">
+           <div className="fixed bottom-0 left-0 right-0 z-10">
              <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
                 <div className={cn(
                     "bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2",
@@ -385,5 +385,7 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
 
     
