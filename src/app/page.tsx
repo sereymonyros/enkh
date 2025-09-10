@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Loader2, Languages, Trash2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowUp, Trash2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { clearTranslations } from '@/ai/flows/clear-translations';
@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/tooltip';
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
-// Fallback to 1 day if the environment variable is not set.
 const LOCAL_CACHE_STALE_MS =
   parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 86400000;
 
@@ -31,7 +30,6 @@ export default function Home() {
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [detectedLang, setDetectedLang] = useState<'en' | 'km' | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,7 +42,6 @@ export default function Home() {
 
     setIsLoading(true);
     setOutputText('');
-    setDetectedLang(null);
 
     try {
       // --- Step 1: Detect the language ---
@@ -63,7 +60,6 @@ export default function Home() {
         return;
       }
       console.log(`   ✅ DETECTED: Language is '${currentDetectedLang}'.`);
-      setDetectedLang(currentDetectedLang);
 
       const sourceLang = currentDetectedLang;
       const targetLang = sourceLang === 'en' ? 'km' : 'en';
@@ -103,6 +99,7 @@ export default function Home() {
         targetLanguage: targetLang,
       });
       setOutputText(result.translatedText);
+      setInputText(''); // Clear input after successful translation
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
       console.log(
@@ -156,15 +153,14 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gradient-to-b from-[#1c1c1e] via-[#1c1c1e] to-[#1d2a57] text-white flex flex-col font-body antialiased">
-        <main className="flex-1 flex flex-col items-center justify-center p-4 gap-4 relative">
-          {/* Top-down text areas */}
+        <main className="flex-1 flex flex-col items-center justify-between p-4 gap-4 relative">
+          {/* Output Area */}
           <div className="w-full max-w-2xl flex-1 flex flex-col gap-4 justify-center">
-            {/* Output Text Area */}
-            <div className="relative">
+            <div className="relative h-full">
               <Textarea
                 placeholder="Translation"
                 readOnly
-                className="bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl min-h-[200px] text-lg resize-none w-full"
+                className="bg-transparent backdrop-blur-md border-none rounded-2xl h-full text-lg resize-none w-full focus-visible:ring-0"
                 value={outputText}
               />
               {isLoading && (
@@ -176,54 +172,41 @@ export default function Home() {
                 </div>
               )}
             </div>
-
-            {/* Input Text Area */}
-            <div className="relative">
-               <Textarea
-                placeholder="Enter text to translate..."
-                className="bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl min-h-[200px] text-lg resize-none w-full focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-white/50"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-              />
-            </div>
           </div>
-        </main>
-        {/* Fixed bottom action bar */}
-        <footer className="sticky bottom-0 left-0 right-0 w-full flex justify-center p-4 bg-gradient-to-t from-black/50 to-transparent">
-          <div className="flex items-center gap-4 bg-black/20 backdrop-blur-lg border border-white/20 rounded-full p-2">
+
+          {/* Input Bar */}
+          <div className="w-full max-w-2xl bg-black/20 backdrop-blur-lg border border-white/20 rounded-3xl p-2 flex items-end gap-2">
+            <Textarea
+              placeholder="Enter text to translate..."
+              className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleTranslate();
+                }
+              }}
+            />
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="bg-transparent rounded-full w-14 h-14 hover:bg-white/10 text-white"
+                  className="bg-white/10 rounded-full w-12 h-12 hover:bg-white/20 text-white shrink-0"
                   onClick={handleTranslate}
                   disabled={isLoading || !inputText.trim()}
                 >
-                  <Languages size={28} />
+                  <ArrowUp size={24} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Translate</p>
               </TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="bg-transparent rounded-full w-14 h-14 hover:bg-white/10 text-white"
-                  onClick={handleClearFirestore}
-                >
-                  <Trash2 size={28} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Clear Server Cache (Dev)</p>
-              </TooltipContent>
-            </Tooltip>
           </div>
-        </footer>
+        </main>
       </div>
     </TooltipProvider>
   );
