@@ -69,7 +69,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
                     className={cn(
                       'h-8 w-8 transition-colors',
                       star <= (hoverRating || rating)
-                        ? 'text-yellow-400 fill-yellow-400'
+                        ? 'text-blue-400 fill-blue-400'
                         : 'text-muted-foreground'
                     )}
                   />
