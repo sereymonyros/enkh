@@ -35,6 +35,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { WelcomeToast } from '@/components/welcome-toast';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
+import { CacheWarmer } from '@/components/cache-warmer';
 
 
 // Define a type for a single history entry
@@ -472,6 +473,7 @@ export default function Home() {
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         {/* <WelcomeToast historyLength={translationHistory.length} /> */}
+        <CacheWarmer />
         {!videoFinished && (
           <video
             className="background-video"
@@ -586,5 +588,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
