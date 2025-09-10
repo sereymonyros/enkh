@@ -38,7 +38,6 @@ const normalizeText = (text: string) => {
 
 export default function Home() {
   const [inputText, setInputText] = useState('');
-  const [outputText, setOutputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
@@ -52,7 +51,6 @@ export default function Home() {
     if (!trimmedInput) return;
 
     setIsLoading(true);
-    setOutputText('');
 
     try {
       // --- Step 1: Detect the language ---
@@ -94,7 +92,6 @@ export default function Home() {
             sourceLanguage: sourceLang,
             targetLanguage: targetLang,
           };
-          setOutputText(cached.translatedText);
           setTranslationHistory(prev => [newHistoryItem, ...prev]);
           setInputText('');
           setIsLoading(false);
@@ -127,7 +124,6 @@ export default function Home() {
         targetLanguage: targetLang,
       };
 
-      setOutputText(result.translatedText);
       setTranslationHistory(prev => [newHistoryItem, ...prev]);
       setInputText(''); // Clear input after successful translation
 
@@ -191,11 +187,9 @@ export default function Home() {
                 <div key={item.id} className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-left">
-                      <p className="text-sm text-white/60 mb-1">{item.targetLanguage === 'en' ? 'English' : 'Khmer'}</p>
                       <p className="text-lg">{item.translatedText}</p>
                     </div>
                     <div className="text-right">
-                       <p className="text-sm text-white/60 mb-1">{item.sourceLanguage === 'en' ? 'English' : 'Khmer'}</p>
                        <p className="text-lg text-white/80">{item.originalText}</p>
                     </div>
                   </div>
