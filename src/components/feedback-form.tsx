@@ -28,7 +28,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="bottom"
-        className="bg-card text-card-foreground h-auto w-full rounded-t-2xl border-t p-4 shadow-lg sm:max-w-lg sm:mx-auto"
+        className="bg-muted text-card-foreground h-auto w-full rounded-t-2xl border-t p-4 shadow-lg sm:max-w-lg sm:mx-auto"
         onInteractOutside={onClose}
         hideCloseButton={true} // Hide the default close button
       >
