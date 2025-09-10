@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -18,6 +18,17 @@ import {
 } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarMenu,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 // Define a type for a single history entry
@@ -247,28 +258,25 @@ export default function Home() {
   const submitEdit = () => {
     if (editingItemId === null) return;
 
-    // Find the index of the user message being edited
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
-    if (messageIndex === -1) {
-        cancelEditing();
-        return;
-    };
-    
+    if (messageIndex === -1 || !translationHistory[messageIndex + 1]) {
+      cancelEditing();
+      return;
+    }
+  
     const newHistory = [...translationHistory];
-
+  
     // Update the user message in place
     newHistory[messageIndex] = {
-        ...newHistory[messageIndex],
-        originalText: editedText,
+      ...newHistory[messageIndex],
+      originalText: editedText,
     };
-
-    // Mark the following AI message as loading, if it exists
-    if(newHistory[messageIndex + 1]){
-        newHistory[messageIndex + 1] = {
-            ...newHistory[messageIndex + 1],
-            translatedText: '...', // Loading indicator
-        };
-    }
+  
+    // Mark the following AI message as loading
+    newHistory[messageIndex + 1] = {
+      ...newHistory[messageIndex + 1],
+      translatedText: '...', // Loading indicator
+    };
     
     setTranslationHistory(newHistory);
     handleTranslate(editedText, true, editingItemId);
@@ -292,13 +300,13 @@ export default function Home() {
             <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => startEditing(item)}>
                  <Pencil size={14} />
             </Button>
-            <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
+            <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
                  <div className="relative">
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0 pr-12"
+                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-foreground/80 p-0 pr-12"
                      autoFocus
                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -321,7 +329,7 @@ export default function Home() {
                    </div>
                  </div>
               ) : (
-                <p className="text-lg text-white/80">{item.originalText}</p>
+                <p className="text-lg text-foreground/80">{item.originalText}</p>
               )}
             </div>
           </div>
@@ -351,7 +359,7 @@ export default function Home() {
                 <Database size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                )}
             </div>
-             <div className="bg-[#1e1f20] rounded-tr-2xl rounded-b-2xl p-3">
+             <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
                 <p className="text-lg">{item.translatedText}</p>
             </div>
           </div>
@@ -362,10 +370,32 @@ export default function Home() {
 
 
   return (
+    <SidebarProvider>
     <TooltipProvider>
-      <div className="dark min-h-screen w-full bg-gemini-gradient text-white flex flex-col font-body antialiased">
+      <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
+        <Sidebar>
+          <SidebarHeader>
+            {/* You can add a header here, like a logo or title */}
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                 <ThemeToggle />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset>
+        <div className='relative flex flex-col flex-1'>
+          <div className="absolute top-4 right-4 z-20">
+            <SidebarTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu />
+                </Button>
+            </SidebarTrigger>
+          </div>
         <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
-          <div className="flex flex-col gap-6 pb-48 pt-4">
+          <div className="flex flex-col gap-6 pb-48 pt-16">
             {/* History */}
             {translationHistory.map(renderHistoryItem)}
 
@@ -378,7 +408,7 @@ export default function Home() {
           </div>
         </ScrollArea>
         {/* Input Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-10">
+        <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/50 backdrop-blur-sm">
           <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
             <div className={cn(
                 "border border-blue-600 rounded-full p-2 flex items-center gap-2",
@@ -405,7 +435,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-[#1e1f20] text-white rounded-full w-12 h-12"
+                      className="bg-card text-foreground rounded-full w-12 h-12"
                       onClick={() => handleTranslate(inputText)}
                       disabled={isLoading || editingItemId !== null}
                     >
@@ -419,7 +449,10 @@ export default function Home() {
               </div>
           </div>
         </div>
+        </div>
+        </SidebarInset>
       </div>
     </TooltipProvider>
+    </SidebarProvider>
   );
 }
