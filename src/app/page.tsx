@@ -197,11 +197,11 @@ export default function Home() {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-2xl w-auto h-auto px-4 py-2"
+                  className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-2xl w-auto h-auto px-6 py-3"
                   onClick={handleTranslate}
                   disabled={isLoading || !inputText.trim()}
                 >
-                  <ArrowUpSquare size={28} />
+                  <ArrowUpSquare size={32} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
