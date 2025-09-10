@@ -14,33 +14,48 @@ const FEATURES = [
   
 ];
 
-export function WelcomeToast() {
+type WelcomeToastProps = {
+  historyLength: number;
+};
+
+
+export function WelcomeToast({ historyLength }: WelcomeToastProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    // Start fade-in animation shortly after component mounts
+    // Function to start the fade-out process
+    const startFadeOut = () => {
+      setIsFadingOut(true);
+      // After the fade-out animation completes (500ms), remove the component
+      const removeTimer = setTimeout(() => {
+        setIsVisible(false);
+      }, 500);
+      return () => clearTimeout(removeTimer);
+    };
+
+    // Show the toast on initial mount
     const fadeInTimer = setTimeout(() => {
       setIsVisible(true);
-    }, 100); // 100ms delay to ensure initial state is rendered
+    }, 100);
 
-    // Set a timer to start the fade-out process
+    // If history has items, fade out immediately
+    if (historyLength > 0) {
+      startFadeOut();
+      return; // Stop further processing
+    }
+
+    // Otherwise, set a 15-second timer to fade out
     const fadeOutTimer = setTimeout(() => {
-      setIsFadingOut(true);
-    }, 10000); // 5 seconds visible time
+      startFadeOut();
+    }, 15000);
 
-    // Set a timer to completely remove the component from the DOM
-    const removeTimer = setTimeout(() => {
-      setIsVisible(false);
-    }, 10000); // 10 seconds total, allowing for 0.5s fade-out animation
-
-    // Cleanup timers on component unmount
+    // Cleanup timers on component unmount or when historyLength changes
     return () => {
       clearTimeout(fadeInTimer);
       clearTimeout(fadeOutTimer);
-      clearTimeout(removeTimer);
     };
-  }, []);
+  }, [historyLength]);
 
   if (!isVisible) {
     return null;

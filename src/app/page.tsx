@@ -363,7 +363,7 @@ export default function Home() {
     <SidebarProvider>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
-        <WelcomeToast />
+        <WelcomeToast historyLength={translationHistory.length} />
         {!videoFinished && (
           <video
             className="background-video"
