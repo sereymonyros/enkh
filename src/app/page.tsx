@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Sparkles, Camera, Mic, Send } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
@@ -17,6 +17,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+
 
 // Define a type for a single history entry
 type HistoryItem = {
@@ -25,6 +27,7 @@ type HistoryItem = {
   translatedText: string;
   sourceLanguage: 'en' | 'km';
   targetLanguage: 'en' | 'km';
+  isUser: boolean;
 };
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
@@ -40,17 +43,47 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
+  const [isShaking, setIsShaking] = useState(false);
+
+  const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (scrollAreaViewportRef.current) {
+      scrollAreaViewportRef.current.scrollTop =
+        scrollAreaViewportRef.current.scrollHeight;
+    }
+  };
 
   useEffect(() => {
     seedDatabaseIfNeeded();
   }, []);
 
+  useEffect(() => {
+    scrollToBottom();
+  }, [translationHistory, isLoading]);
+
   const handleTranslate = useCallback(async () => {
     const trimmedInput = inputText.trim();
-    if (!trimmedInput) return;
+    if (!trimmedInput) {
+       setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 820); // Duration of the shake animation
+      return;
+    }
 
     setIsLoading(true);
     setInputText(''); // Clear input immediately
+
+    // Add user's message to history immediately
+    const userMessage: HistoryItem = {
+      id: Date.now(),
+      originalText: trimmedInput,
+      translatedText: '', // No translation for user message
+      sourceLanguage: 'en', // Placeholder, will be detected
+      targetLanguage: 'km', // Placeholder
+      isUser: true,
+    };
+    setTranslationHistory(prev => [...prev, userMessage]);
+
 
     try {
       // --- Step 1: Detect the language ---
@@ -85,14 +118,15 @@ export default function Home() {
       if (cached) {
         const age = Date.now() - cached.createdAt.getTime();
         if (age < LOCAL_CACHE_STALE_MS) {
-          const newHistoryItem: HistoryItem = {
-            id: Date.now(),
+           const aiMessage: HistoryItem = {
+            id: Date.now() + 1, // Ensure unique ID
             originalText: trimmedInput,
             translatedText: cached.translatedText,
             sourceLanguage: sourceLang,
             targetLanguage: targetLang,
+            isUser: false,
           };
-          setTranslationHistory(prev => [newHistoryItem, ...prev]);
+          setTranslationHistory(prev => [...prev, aiMessage]);
           setIsLoading(false);
           console.log(
             '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.'
@@ -116,14 +150,15 @@ export default function Home() {
       });
 
       const newHistoryItem: HistoryItem = {
-        id: Date.now(),
+        id: Date.now() + 1,
         originalText: trimmedInput,
         translatedText: result.translatedText,
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
+        isUser: false,
       };
 
-      setTranslationHistory(prev => [newHistoryItem, ...prev]);
+      setTranslationHistory(prev => [...prev, newHistoryItem]);
 
       // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
       console.log(
@@ -157,52 +192,50 @@ export default function Home() {
     }
   }, [inputText, toast]);
 
+  const renderHistoryItem = (item: HistoryItem) => {
+    if (item.isUser) {
+      return (
+        <div key={item.id} className="flex justify-end">
+          <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
+            <p className="text-lg text-white/80">{item.originalText}</p>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div key={item.id} className="flex justify-start items-start gap-3">
+           <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+           <p className="text-lg">{item.translatedText}</p>
+        </div>
+      );
+    }
+  };
+
+
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-[#131314] text-white flex flex-col font-body antialiased">
         <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto">
-          <ScrollArea className="w-full max-w-2xl flex-1">
-            <div className="flex flex-col-reverse gap-6 pb-4">
+           <ScrollArea className="w-full max-w-2xl flex-1" viewportRef={scrollAreaViewportRef}>
+             <div className="flex flex-col gap-6 pb-4">
               {/* History */}
-              {translationHistory.map(item => (
-                <div key={item.id} className="w-full">
-                  <div className="flex flex-col gap-4">
-                    {/* User's query */}
-                    <div className="flex justify-end">
-                      <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
-                        <p className="text-lg text-white/80">{item.originalText}</p>
-                      </div>
-                    </div>
-                    {/* AI's response */}
-                    <div className="flex justify-start items-start gap-3">
-                       <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
-                       <p className="text-lg">{item.translatedText}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-               {isLoading && (
-                 <div className="w-full">
-                    <div className="flex flex-col gap-4">
-                      {/* User's query placeholder - shows the text being translated */}
-                      <div className="flex justify-end">
-                        <div className="bg-[#1e1f20] rounded-2xl p-3 max-w-[80%]">
-                           <p className="text-lg text-white/80">{translationHistory[0]?.originalText || inputText}</p>
-                        </div>
-                      </div>
-                      {/* AI's response placeholder */}
-                      <div className="flex justify-start items-start gap-3">
-                         <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {translationHistory.map(renderHistoryItem)}
+
+              {/* Loading Indicator */}
+              {isLoading && translationHistory[translationHistory.length-1]?.isUser && (
+                 <div className="flex justify-start items-start gap-3">
+                   <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
+                 </div>
+              )}
             </div>
           </ScrollArea>
           </main>
           {/* Input Bar */}
-          <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex flex-col gap-3">
-            <div className="bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2">
+           <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex flex-col gap-3">
+            <div className={cn(
+                "bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2",
+                isShaking ? 'animate-shake' : ''
+              )}>
               <Textarea
                 placeholder="Enter text to translate..."
                 className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
@@ -255,7 +288,7 @@ export default function Home() {
                       size="icon"
                       className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12"
                       onClick={handleTranslate}
-                      disabled={isLoading || !inputText.trim()}
+                      disabled={isLoading}
                     >
                       <Send size={24} />
                     </Button>
