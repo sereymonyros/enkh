@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 const FEATURES = [
+  'កម្មវិធីនេះត្រូវបានបង្កើតឡើងសម្រាប់ជាប្រយោជន៍ដល់សហគមន៍កម្ពុជា និងជនបរទេស។ មួយរយៈទៀត វានឹងល្អជាង Google Translator។ សូមជួយខ្ញុំសាកល្បងវា។',  
   'Next week features(លក្ខណៈពិសេសសប្តាហ៍ក្រោយ)',
   '1) អត្ថបទ​ទៅ​ជា​សំឡេង',
   '2) សំឡេងទៅអត្ថបទ',  
   '3) រូបភាពទៅអក្សរ',
   '4) រូបភាពទៅជាសំឡេង',
+  
 ];
 
 export function WelcomeToast() {
@@ -25,12 +27,12 @@ export function WelcomeToast() {
     // Set a timer to start the fade-out process
     const fadeOutTimer = setTimeout(() => {
       setIsFadingOut(true);
-    }, 5000); // 5 seconds visible time
+    }, 10000); // 5 seconds visible time
 
     // Set a timer to completely remove the component from the DOM
     const removeTimer = setTimeout(() => {
       setIsVisible(false);
-    }, 5500); // 5.5 seconds total, allowing for 0.5s fade-out animation
+    }, 10000); // 10 seconds total, allowing for 0.5s fade-out animation
 
     // Cleanup timers on component unmount
     return () => {
