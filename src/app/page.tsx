@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WelcomeToast } from '@/components/welcome-toast';
+import { FeedbackForm } from '@/components/feedback-form';
 
 
 // Define a type for a single history entry
@@ -64,6 +65,7 @@ export default function Home() {
   const [editedText, setEditedText] = useState('');
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
 
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -292,25 +294,28 @@ export default function Home() {
   const submitEdit = () => {
     if (editingItemId === null) return;
   
+    // Find the original user message to edit
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
-    if (messageIndex === -1 || !translationHistory[messageIndex + 1]) {
+    if (messageIndex === -1) {
       cancelEditing();
       return;
     }
   
+    // Optimistically update the user's message text
     const newHistory = [...translationHistory];
-  
-    // Update the user message in place
     newHistory[messageIndex] = {
       ...newHistory[messageIndex],
       originalText: editedText,
     };
   
-    // Mark the following AI message as loading
-    newHistory[messageIndex + 1] = {
-      ...newHistory[messageIndex + 1],
-      translatedText: '...', // Loading indicator
-    };
+    // Find the corresponding AI message and mark it as loading
+    // This assumes the AI message is always the next one.
+    if (newHistory[messageIndex + 1] && !newHistory[messageIndex + 1].isUser) {
+      newHistory[messageIndex + 1] = {
+        ...newHistory[messageIndex + 1],
+        translatedText: '...', // Loading indicator
+      };
+    }
     
     setTranslationHistory(newHistory);
     handleTranslate(editedText, true, editingItemId);
@@ -329,6 +334,19 @@ export default function Home() {
   const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
         const isEditing = editingItemId === item.id;
+        const originalTextStatic = (
+            <div
+            className={cn(
+              'transition-all duration-700 ease-in-out',
+              isEditing ? 'w-0 opacity-0' : 'w-full opacity-100'
+            )}
+            style={{...(isEditing && { height: 0, overflow: 'hidden' })}}
+          >
+             <p className="text-lg">
+                {item.originalText}
+             </p>
+           </div>
+        );
 
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
@@ -344,14 +362,15 @@ export default function Home() {
                </div>
             </div>
             <div className={cn("bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
-             {isEditing ? (
+              {originalTextStatic}
+              {isEditing && (
                  <div
                     className={cn(
-                        "relative transition-all duration-10000 ease-in-out",
+                        "relative transition-all duration-700 ease-in-out overflow-hidden",
                         isEditing ? "w-full opacity-100" : "w-0 opacity-0"
                     )}
                     >
-                    <div className="relative border border-blue-400 p-1.5 rounded-2xl overflow-hidden">
+                    <div className="relative border border-blue-400 p-1.5 rounded-2xl">
                         <Textarea
                             value={editedText}
                             onChange={(e) => setEditedText(e.target.value)}
@@ -379,10 +398,6 @@ export default function Home() {
                         </div>
                     </div>
                  </div>
-              ) : (
-                 <p className="text-lg">
-                    {item.originalText}
-                 </p>
               )}
             </div>
           </div>
@@ -454,7 +469,7 @@ export default function Home() {
                  <ThemeToggle />
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Button variant="ghost" size="icon" className="text-blue-400">
+                <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
                   <MessageSquare />
                 </Button>
               </SidebarMenuItem>
@@ -529,6 +544,7 @@ export default function Home() {
         </div>
         </div>
         </SidebarInset>
+        <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
       </div>
     </TooltipProvider>
     </SidebarProvider>
@@ -541,3 +557,4 @@ export default function Home() {
     
 
     
+
