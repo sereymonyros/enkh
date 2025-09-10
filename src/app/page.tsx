@@ -57,6 +57,7 @@ export default function Home() {
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
   const [isShaking, setIsShaking] = useState(false);
+  const [videoFinished, setVideoFinished] = useState(false);
 
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -361,6 +362,16 @@ export default function Home() {
     <SidebarProvider>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
+        {!videoFinished && (
+          <video
+            className="background-video"
+            autoPlay
+            muted
+            playsInline
+            onEnded={() => setVideoFinished(true)}
+            src="/background.mp4"
+          />
+        )}
         <Sidebar>
           <SidebarHeader>
             {/* You can add a header here, like a logo or title */}

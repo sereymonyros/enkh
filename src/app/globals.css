@@ -100,4 +100,14 @@ body {
     background-color: #0d0f19;
     background-image: radial-gradient(ellipse 80% 50% at 50% 120%, #0d1a33, #0d0f19);
   }
+  .background-video {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+  }
 }
