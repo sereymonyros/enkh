@@ -295,10 +295,10 @@ export default function Home() {
                    />
                    <div className="absolute top-0 right-0 flex items-center gap-1">
                      <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={14} />
+                       <X size={10} />
                      </Button>
                      <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={14} />
+                       <Check size={10} />
                      </Button>
                    </div>
                  </div>
