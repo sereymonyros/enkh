@@ -153,16 +153,6 @@ export default function Home() {
     }
   };
 
-  const getLanguageName = (langCode: 'en' | 'km' | null) => {
-    if (langCode === 'en') return 'English';
-    if (langCode === 'km') return 'Khmer';
-    return '';
-  };
-  
-  const sourceLanguageName = getLanguageName(detectedLang);
-  const targetLanguageName = getLanguageName(detectedLang === 'en' ? 'km' : 'en');
-
-
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gradient-to-b from-[#1c1c1e] via-[#1c1c1e] to-[#1d2a57] text-white flex flex-col font-body antialiased">
@@ -195,13 +185,6 @@ export default function Home() {
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
               />
-               {detectedLang && (
-                <div className="absolute bottom-3 right-3 text-white/50 text-xs flex items-center gap-1">
-                  <span>{sourceLanguageName}</span>
-                  <ArrowRight size={12} />
-                  <span>{targetLanguageName}</span>
-                </div>
-              )}
             </div>
           </div>
         </main>
