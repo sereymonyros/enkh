@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -347,7 +347,7 @@ export default function Home() {
              {isEditing ? (
                  <div
                     className={cn(
-                        "relative w-full transition-all duration-10000 ease-in-out",
+                        "relative transition-all duration-10000 ease-in-out",
                         isEditing ? "w-full opacity-100" : "w-0 opacity-0"
                     )}
                     >
@@ -452,6 +452,11 @@ export default function Home() {
             <SidebarMenu>
               <SidebarMenuItem>
                  <ThemeToggle />
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <Button variant="ghost" size="icon" className="text-blue-400">
+                  <MessageSquare />
+                </Button>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
