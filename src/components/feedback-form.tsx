@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, X } from 'lucide-react';
+import { Star, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type FeedbackFormProps = {
@@ -78,7 +78,9 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
 
             {/* Submit Button */}
             <div className="flex justify-start">
-              <Button onClick={handleSubmit} variant="ghost">Submit</Button>
+              <Button onClick={handleSubmit} variant="ghost" size="icon">
+                <Send />
+              </Button>
             </div>
           </div>
         </div>
