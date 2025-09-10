@@ -82,7 +82,6 @@ export default function Home() {
     if (!isEditing) {
         setInputText('Hello Cambodia');
     }
-    setEditingItemId(null);
 
     // If it's a new message, add the user message to history.
     if (!isEditing) {
@@ -112,26 +111,25 @@ export default function Home() {
             'Could not determine the input language. Please use English or Khmer.',
           variant: 'destructive',
         });
-        if (!isEditing) {
-            setTranslationHistory(prev => prev.slice(0, -1));
-        } else if (editedMessageId) {
-             // If edit fails, revert the change
+        if (isEditing && editedMessageId) {
+             // If edit fails, revert the change by finding the original state
             setTranslationHistory(prev => {
-                const messageIndex = prev.findIndex(item => item.id === editedMessageId);
-                if (messageIndex !== -1 && prev[messageIndex + 1]) {
-                    const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
-                     if(originalUserMessage) {
-                        const newHistory = [...prev];
-                        newHistory[messageIndex] = originalUserMessage; // Revert user message
-                        // We assume the AI message is next, but ideally it should also be reverted
-                        // For now, let's just revert the user's text
-                        return newHistory;
-                    }
+                const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
+                const originalAiMessage = translationHistory.find(item => item.id === editedMessageId + 1);
+                if (originalUserMessage && originalAiMessage) {
+                    const newHistory = [...prev];
+                    const userIndex = newHistory.findIndex(item => item.id === editedMessageId);
+                    newHistory[userIndex] = originalUserMessage;
+                    newHistory[userIndex + 1] = originalAiMessage;
+                    return newHistory;
                 }
                 return prev;
-            })
+            });
+        } else {
+            setTranslationHistory(prev => prev.slice(0, -1));
         }
         setIsLoading(false);
+        setEditingItemId(null);
         return;
       }
       console.log(`   ✅ DETECTED: Language is '${currentDetectedLang}'.`);
@@ -188,9 +186,8 @@ export default function Home() {
         fromCache,
       };
 
-      if(isEditing){
+      if(isEditing && editedMessageId){
          setTranslationHistory(prev => {
-            if (!editedMessageId) return prev;
             const messageIndex = prev.findIndex(item => item.id === editedMessageId);
             if (messageIndex === -1) return prev;
             
@@ -212,11 +209,27 @@ export default function Home() {
           'An error occurred while translating the text. Please try again.',
         variant: 'destructive',
       });
-      if (!isEditing) {
-        setTranslationHistory(prev => prev.slice(0, -1));
-      }
+       if (isEditing && editedMessageId) {
+             // If edit fails, revert the change by finding the original state
+            setTranslationHistory(prev => {
+                const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
+                const originalAiMessage = translationHistory.find(item => item.id === editedMessageId + 1);
+                if (originalUserMessage && originalAiMessage) {
+                    const newHistory = [...prev];
+                    const userIndex = newHistory.findIndex(item => item.id === editedMessageId);
+                    newHistory[userIndex] = originalUserMessage;
+                    newHistory[userIndex + 1] = originalAiMessage;
+                    return newHistory;
+                }
+                return prev;
+            });
+        } else {
+            setTranslationHistory(prev => prev.slice(0, -1));
+        }
     } finally {
       setIsLoading(false);
+      setEditingItemId(null);
+      setEditedText("");
     }
   }, [toast, translationHistory]);
 
@@ -236,7 +249,7 @@ export default function Home() {
 
     // Find the index of the user message being edited
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
-    if (messageIndex === -1 || !translationHistory[messageIndex + 1]) {
+    if (messageIndex === -1) {
         cancelEditing();
         return;
     };
@@ -249,17 +262,16 @@ export default function Home() {
         originalText: editedText,
     };
 
-    // Mark the following AI message as loading
-    newHistory[messageIndex + 1] = {
-        ...newHistory[messageIndex + 1],
-        translatedText: '...', // Loading indicator
-    };
+    // Mark the following AI message as loading, if it exists
+    if(newHistory[messageIndex + 1]){
+        newHistory[messageIndex + 1] = {
+            ...newHistory[messageIndex + 1],
+            translatedText: '...', // Loading indicator
+        };
+    }
     
     setTranslationHistory(newHistory);
     handleTranslate(editedText, true, editingItemId);
-
-    setEditingItemId(null);
-    setEditedText("");
   };
 
   const handleCopyToClipboard = (text: string) => {
@@ -327,7 +339,7 @@ export default function Home() {
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
           <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
                   <Copy size={14} />
@@ -358,7 +370,7 @@ export default function Home() {
             {translationHistory.map(renderHistoryItem)}
 
             {/* Loading Indicator for new messages */}
-            {isLoading && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
+            {isLoading && !editingItemId && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
                 <div className="flex justify-start items-start gap-3">
                 <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
                 </div>
@@ -411,9 +423,3 @@ export default function Home() {
     </TooltipProvider>
   );
 }
-
-    
-
-    
-
-    
