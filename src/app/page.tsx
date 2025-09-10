@@ -186,23 +186,6 @@ export default function Home() {
         <main className="flex-1 flex flex-col items-center justify-between p-4 gap-4 relative">
           <ScrollArea className="w-full max-w-2xl flex-1">
             <div className="flex flex-col-reverse gap-6 pb-24">
-              {/* Current Translation Output */}
-              <div className="relative min-h-[100px]">
-                <Textarea
-                  placeholder="Translation"
-                  readOnly
-                  className="bg-transparent backdrop-blur-md border-none rounded-2xl h-full text-lg resize-none w-full focus-visible:ring-0"
-                  value={outputText}
-                />
-                {isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span>Translating...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
               {/* History */}
               {translationHistory.map(item => (
                 <div key={item.id} className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
@@ -218,6 +201,14 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+               {isLoading && (
+                  <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4 flex items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span>Translating...</span>
+                    </div>
+                  </div>
+                )}
             </div>
           </ScrollArea>
 
