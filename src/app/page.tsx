@@ -2,10 +2,9 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Sparkles, ArrowUpSquare } from 'lucide-react';
+import { Sparkles, Camera, Mic, Send } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
-import { clearTranslations } from '@/ai/flows/clear-translations';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -203,8 +202,8 @@ export default function Home() {
           </ScrollArea>
           </main>
           {/* Input Bar */}
-          <div className="w-full max-w-2xl mx-auto px-4 pb-4">
-            <div className="bg-[#1e1f20] border border-white/20 rounded-2xl p-2 flex items-end gap-2">
+          <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex flex-col gap-3">
+            <div className="bg-[#1e1f20] border border-white/20 rounded-full p-2 flex items-center gap-2">
               <Textarea
                 placeholder="Enter text to translate..."
                 className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
@@ -218,23 +217,55 @@ export default function Home() {
                   }
                 }}
               />
-               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="bg-blue-900/50 hover:bg-blue-900/80 text-white rounded-full w-10 h-10 shrink-0"
-                    onClick={handleTranslate}
-                    disabled={isLoading || !inputText.trim()}
-                  >
-                    <ArrowUpSquare size={20} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Translate</p>
-                </TooltipContent>
-              </Tooltip>
             </div>
+             <div className="flex justify-center items-center gap-4">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-[#1e1f20] hover:bg-white/20 text-white rounded-full w-12 h-12"
+                      disabled={true}
+                    >
+                      <Camera size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Translate from image (coming soon)</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-[#1e1f20] hover:bg-white/20 text-white rounded-full w-12 h-12"
+                      disabled={true}
+                    >
+                      <Mic size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Translate from speech (coming soon)</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12"
+                      onClick={handleTranslate}
+                      disabled={isLoading || !inputText.trim()}
+                    >
+                      <Send size={24} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Translate</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
           </div>
       </div>
     </TooltipProvider>
