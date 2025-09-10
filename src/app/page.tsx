@@ -184,7 +184,7 @@ export default function Home() {
             <div className="flex flex-col-reverse gap-6 pb-24">
               {/* History */}
               {translationHistory.map(item => (
-                <div key={item.id} className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
+                <div key={item.id}>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-left">
                       <p className="text-lg">{item.translatedText}</p>
@@ -196,7 +196,7 @@ export default function Home() {
                 </div>
               ))}
                {isLoading && (
-                 <div className="w-full bg-white/5 backdrop-blur-md rounded-2xl p-4">
+                 <div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-left flex flex-col items-start justify-center">
                         <Sparkles className="h-6 w-6 animate-spin text-white/80" />
