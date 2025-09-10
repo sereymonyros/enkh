@@ -337,17 +337,22 @@ export default function Home() {
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
           <div className="flex flex-col gap-2 w-full">
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
-               <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
-                  <Copy size={14} className="text-blue-400/50" />
-               </Button>
-               <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
-                  <Volume2 size={14} className="text-blue-400/50" />
-               </Button>
-               {item.fromCache && (
-                <Database size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400/50" />
-               )}
+               <div className="flex items-center">
+                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
+                    <Copy size={14} className="text-blue-400/50" />
+                </Button>
+                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
+                    <Volume2 size={14} className="text-blue-400/50" />
+                </Button>
+                {item.fromCache && (
+                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
+                    <Database size={14} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400/50" />
+                  </Button>
+                )}
+               </div>
+               
             </div>
              <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
                 <p className="text-lg">{item.translatedText}</p>
@@ -360,7 +365,7 @@ export default function Home() {
 
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <WelcomeToast historyLength={translationHistory.length} />
@@ -458,3 +463,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
