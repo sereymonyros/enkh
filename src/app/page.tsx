@@ -202,7 +202,7 @@ export default function Home() {
           </main>
           {/* Input Bar */}
           <div className="w-full max-w-2xl mx-auto px-4 pb-4 flex flex-col gap-3">
-            <div className="bg-[#1e1f20] border border-white/20 rounded-full p-2 flex items-center gap-2">
+            <div className="bg-[#1e1f20] border border-blue-600 rounded-full p-2 flex items-center gap-2">
               <Textarea
                 placeholder="Enter text to translate..."
                 className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
