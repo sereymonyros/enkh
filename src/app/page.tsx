@@ -418,7 +418,7 @@ export default function Home() {
               )}>
               <Textarea
                 placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
-                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-sm"
+                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 rows={1}
