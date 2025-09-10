@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -238,6 +238,15 @@ export default function Home() {
     }
   };
 
+  const handleCopyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({ title: 'Copied to clipboard!' });
+    }, (err) => {
+      console.error('Could not copy text: ', err);
+      toast({ title: 'Failed to copy', variant: 'destructive' });
+    });
+  };
+
 
   const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
@@ -281,8 +290,16 @@ export default function Home() {
         }
 
       return (
-        <div key={item.id} className="flex flex-col justify-start items-start gap-2">
-           <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
+        <div key={item.id} className="group flex flex-col justify-start items-start gap-2">
+          <div className="flex items-center gap-2">
+             <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
+             <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
+                <Copy size={18} />
+             </Button>
+             <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
+                <Volume2 size={18} />
+             </Button>
+          </div>
            <p className="text-lg">{item.translatedText}</p>
         </div>
       );
