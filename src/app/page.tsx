@@ -98,6 +98,8 @@ export default function Home() {
             'Could not determine the input language. Please use English or Khmer.',
           variant: 'destructive',
         });
+        // Remove the user message if detection fails
+        setTranslationHistory(prev => prev.slice(0, -1));
         setIsLoading(false);
         return;
       }
@@ -187,6 +189,8 @@ export default function Home() {
           'An error occurred while translating the text. Please try again.',
         variant: 'destructive',
       });
+      // Also remove user message on error
+      setTranslationHistory(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
@@ -286,7 +290,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12"
+                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
                       onClick={handleTranslate}
                       disabled={isLoading}
                     >
