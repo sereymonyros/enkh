@@ -32,7 +32,7 @@ type HistoryItem = {
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
 const LOCAL_CACHE_STALE_MS =
-  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 86400000;
+  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 8640000;
 
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
@@ -256,7 +256,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-[#1e1f20] hover:bg-white/20 text-white rounded-full w-12 h-12"
+                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
                       disabled={true}
                     >
                       <Camera size={24} />
@@ -271,7 +271,7 @@ export default function Home() {
                      <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-[#1e1f20] hover:bg-white/20 text-white rounded-full w-12 h-12"
+                      className="bg-[#1e1f20] hover:bg-[#1e1f20] text-white rounded-full w-12 h-12"
                       disabled={true}
                     >
                       <Mic size={24} />
