@@ -8,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Star, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { submitFeedback } from '@/lib/feedback-service';
-import { useFeedbackStore } from '@/lib/feedback-store';
+import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { toast } from 'sonner';
+import { broadcastFeedback } from '@/lib/broadcast-channel';
 
 
 type FeedbackFormProps = {
@@ -47,38 +48,42 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
     setIsSubmitting(true);
 
     const optimisticId = `optimistic-${Date.now()}`;
-    const feedbackData = { rating, comment: feedbackText };
-    
-    // Optimistically update the UI
-    addOptimisticFeedback({
-      ...feedbackData,
+    const newFeedback: OptimisticFeedback = {
       id: optimisticId,
-      createdAt: new Date(), // Use a client-side date for optimistic item
+      rating,
+      comment: feedbackText,
+      createdAt: new Date(),
       status: 'new',
-    });
+    };
+    
+    // 1. Optimistically update the current tab's UI
+    addOptimisticFeedback(newFeedback);
+
+    // 2. Broadcast the optimistic update to other tabs
+    broadcastFeedback(newFeedback);
 
     handleClose(); // Close form immediately
 
     try {
-        await submitFeedback(feedbackData);
-        // On success, the real-time listener will replace the optimistic update.
-        // We can show a subtle success toast if needed.
+        await submitFeedback({ rating, comment: feedbackText });
+        // On success, the real-time listener will eventually replace the optimistic update.
         if (navigator.onLine) {
             toast.success("Thank you for your feedback!");
         } else {
-             toast.success("Feedback saved", {
-                description: "It will be submitted when you're back online.",
+             toast.info("You are offline", {
+                description: "Your feedback has been saved and will be submitted when you're back online.",
             });
         }
     } catch (error) {
       // If submission fails, we need to remove the optimistic update.
-      // This is a more advanced scenario, for now, we just log the error.
+      // This is a more advanced scenario that involves updating Zustand state.
+      // For now, we log the error and notify the user.
       console.error("Failed to submit feedback:", error);
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unknown error occurred.");
-      }
+      toast.error("Failed to submit feedback", {
+        description: "There was a problem submitting your feedback. Please try again later.",
+      });
+      // Here you would ideally remove the optimistic feedback item from the store.
+      // useFeedbackStore.getState().removeOptimisticFeedback(optimisticId);
     } finally {
         setIsSubmitting(false);
     }

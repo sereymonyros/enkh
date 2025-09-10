@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { addFeedbackListener } from '@/lib/broadcast-channel';
+
 
 type Feedback = {
   id: string;
@@ -57,13 +59,13 @@ const RatingStars = ({ rating }: { rating: number }) => {
 export function FeedbackTable() {
   const [serverFeedback, setServerFeedback] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const optimisticFeedback = useFeedbackStore((state) => state.optimisticFeedback);
+  const { optimisticFeedback, addOptimisticFeedback } = useFeedbackStore();
 
   useEffect(() => {
+    // Listen for real-time updates from Firestore
     const feedbacksCollection = collection(db, 'feedbacks');
     const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(
+    const unsubscribeFirestore = onSnapshot(
       q,
       (querySnapshot) => {
         const feedbacks = querySnapshot.docs.map((doc) => ({
@@ -79,20 +81,31 @@ export function FeedbackTable() {
       }
     );
 
-    // Cleanup subscription on component unmount
-    return () => unsubscribe();
-  }, []);
+    // Listen for optimistic updates from other tabs
+    const unsubscribeChannel = addFeedbackListener((newFeedback) => {
+        // When a message is received, add it to this tab's zustand store
+        addOptimisticFeedback(newFeedback);
+    });
+
+    // Cleanup subscriptions on component unmount
+    return () => {
+        unsubscribeFirestore();
+        unsubscribeChannel();
+    };
+  }, [addOptimisticFeedback]);
 
   const combinedFeedback = useMemo(() => {
     const serverIds = new Set(serverFeedback.map(f => f.id));
     // Filter out optimistic items that have been replaced by server data
     const filteredOptimistic = optimisticFeedback.filter(
+        // An optimistic item is kept if there's no server item with the same comment and rating.
+        // This is a simple way to deduplicate. A more robust way would be to use the optimistic ID.
         (of) => !serverFeedback.some(sf => sf.comment === of.comment && sf.rating === of.rating)
     );
 
     const allFeedback = [...filteredOptimistic, ...serverFeedback];
 
-    // Sort the combined list
+    // Sort the combined list by date
     allFeedback.sort((a, b) => {
       const dateA = isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt;
       const dateB = isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt;
