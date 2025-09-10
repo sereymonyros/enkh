@@ -30,6 +30,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { WelcomeToast } from '@/components/welcome-toast';
 
 
 // Define a type for a single history entry
@@ -362,6 +363,7 @@ export default function Home() {
     <SidebarProvider>
     <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
+        <WelcomeToast />
         {!videoFinished && (
           <video
             className="background-video"

@@ -102,11 +102,18 @@ export default {
             transform: 'translate3d(4px, 0, 0)',
           },
         },
+        'fade-in-out': {
+          '0%': { opacity: '0' },
+          '10%': { opacity: '1' },
+          '90%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'shake': 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
+        'fade-in-out': 'fade-in-out 5s ease-in-out forwards',
       },
     },
   },
