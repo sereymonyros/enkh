@@ -253,7 +253,7 @@ export default function Home() {
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0"
+                     className="bg-transparent border-0 text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0"
                      autoFocus
                    />
                    <div className="flex items-center gap-2">
@@ -352,5 +352,3 @@ export default function Home() {
     </TooltipProvider>
   );
 }
-
-    
