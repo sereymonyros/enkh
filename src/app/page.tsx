@@ -74,7 +74,7 @@ export default function Home() {
     }
 
     setIsLoading(true);
-    setInputText(''); // Clear input immediately
+    setInputText('Hello Cambodia'); // Reset input to default
     setEditingItemId(null); // Exit editing mode
 
     // If it's a new message, add user's message to history.
@@ -383,5 +383,7 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
 
     
