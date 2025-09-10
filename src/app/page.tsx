@@ -411,7 +411,7 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/50 backdrop-blur-sm">
           <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
             <div className={cn(
-                "border border-blue-400 rounded-full p-2 flex items-center gap-2",
+                "border-2 border-blue-400 rounded-full p-2 flex items-center gap-2",
                 isShaking ? 'animate-shake' : ''
               )}>
               <Textarea
