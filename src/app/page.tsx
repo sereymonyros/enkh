@@ -309,23 +309,15 @@ export default function Home() {
           </div>
         );
     } else {
-      const isBeingEdited = item.translatedText === '...';
-
-      if (isBeingEdited) {
+       // If the AI message is currently being re-translated, show a spinner.
+      if (item.translatedText === '...') {
         return (
           <div key={item.id} className="flex justify-start items-start gap-3">
             <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
           </div>
         );
       }
-
-      if (isLoading && index === translationHistory.length - 1) {
-          const prevItem = translationHistory[index - 1];
-          if (prevItem && prevItem.isUser) {
-            return null;
-          }
-      }
-
+      
       return (
         <div key={item.id} className="group flex justify-start items-start gap-2 max-w-[80%]">
           <div className="flex flex-col gap-2 w-full">
