@@ -264,6 +264,12 @@ export default function Home() {
                      onChange={(e) => setEditedText(e.target.value)}
                      className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-white/80 p-0"
                      autoFocus
+                     onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitEdit();
+                      }
+                    }}
                    />
                    <div className="flex items-center gap-2">
                      <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
@@ -373,3 +379,5 @@ export default function Home() {
     </TooltipProvider>
   );
 }
+
+    
