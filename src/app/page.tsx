@@ -254,7 +254,7 @@ export default function Home() {
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
             <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => startEditing(item)}>
-                 <Pencil size={18} />
+                 <Pencil size={16} />
             </Button>
             <div className="bg-[#1e1f20] rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
@@ -267,10 +267,10 @@ export default function Home() {
                    />
                    <div className="flex items-center gap-2">
                      <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={18} />
+                       <X size={16} />
                      </Button>
                      <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={18} />
+                       <Check size={16} />
                      </Button>
                    </div>
                  </div>
@@ -294,10 +294,10 @@ export default function Home() {
           <div className="flex items-center gap-2">
              <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
-                <Copy size={18} />
+                <Copy size={16} />
              </Button>
              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
-                <Volume2 size={18} />
+                <Volume2 size={16} />
              </Button>
           </div>
            <p className="text-lg">{item.translatedText}</p>
