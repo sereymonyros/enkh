@@ -51,7 +51,7 @@ const normalizeText = (text: string) => {
 };
 
 export default function Home() {
-  const [inputText, setInputText] = useState('Hello Cambodia');
+  const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
@@ -91,7 +91,7 @@ export default function Home() {
 
     setIsLoading(true);
     if (!isEditing) {
-        setInputText('Hello Cambodia');
+        setInputText('');
     }
 
     // If it's a new message, add the user message to history.
