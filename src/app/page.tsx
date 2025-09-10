@@ -297,7 +297,7 @@ export default function Home() {
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-foreground/80 p-0 pr-16"
+                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 p-0 pr-16"
                      autoFocus
                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -442,7 +442,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-card text-blue-400 rounded-full w-12 h-12 hover:text-blue-500"
+                      className="bg-card/50 text-blue-400 rounded-full w-12 h-12 hover:text-blue-500"
                       onClick={() => handleTranslate(inputText)}
                       disabled={isLoading || editingItemId !== null}
                     >
@@ -463,5 +463,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
