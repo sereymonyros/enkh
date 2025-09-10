@@ -309,13 +309,13 @@ export default function Home() {
           </div>
         );
     } else {
-        // Check if the previous message was a user message that is currently loading its translation
-        const prevItem = translationHistory[index - 1];
-        const isPrevItemLoading = prevItem && prevItem.isUser && isLoading && index === translationHistory.length -1;
         const isBeingEdited = item.translatedText === '...';
         
-        if (isPrevItemLoading && !isBeingEdited) {
-            return null; // Don't render the AI bubble if the previous user message is what's loading
+        if (isLoading && !isBeingEdited && index === translationHistory.length - 1) {
+            const prevItem = translationHistory[index - 1];
+            if (prevItem && prevItem.isUser) {
+              return null; // Don't render the AI bubble if the previous user message is what's loading
+            }
         }
 
       return (
