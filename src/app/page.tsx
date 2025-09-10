@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
@@ -28,10 +28,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WelcomeToast } from '@/components/welcome-toast';
 import { FeedbackForm } from '@/components/feedback-form';
+import Link from 'next/link';
 
 
 // Define a type for a single history entry
@@ -458,7 +460,16 @@ export default function Home() {
             </SidebarMenu>
           </SidebarHeader>
           <SidebarContent>
-            {/* Content for the main section of the sidebar */}
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                        <Link href="/feedback">
+                            <List />
+                            Feedback List
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="justify-center items-center">
             <SidebarMenu>
