@@ -446,7 +446,7 @@ export default function Home() {
               {isLoading && (
                 <Button
                       size="icon"
-                      className="bg-primary/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
+                      className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
                     >
                       <StopCircle size={24} />
                     </Button>

@@ -111,7 +111,7 @@ export default {
         },
         'pulse-bg': {
           '50%': {
-            backgroundColor: 'hsl(var(--primary) / 0.2)',
+            backgroundColor: 'hsl(var(--destructive) / 0.3)',
           },
         },
       },
@@ -120,11 +120,9 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'shake': 'shake 0.82s cubic-bezier(.36,.07,.19,.97) both',
         'fade-in-out': 'fade-in-out 5s ease-in-out forwards',
-        'pulse-bg': 'pulse-bg 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'pulse-bg': 'pulse-bg 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
-
-    
