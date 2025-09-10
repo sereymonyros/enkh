@@ -180,7 +180,6 @@ const translateTextFlow = ai.defineFlow(
         });
     }
 
-
     // 5. RETURN RESULT
     return output;
   }

@@ -21,7 +21,9 @@ import { useToast } from '@/hooks/use-toast';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
-const LOCAL_CACHE_STALE_MS = process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS
+// Fallback to 1 day if the environment variable is not set.
+const LOCAL_CACHE_STALE_MS =
+  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 86400000;
 
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
