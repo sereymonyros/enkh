@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 const FEATURES = [
-  'text-to-speech',
-  'voice-to-text',
-  'voice-to-speech',
-  'image-to-text',
-  'image-to-speech',
+  'Next week features(លក្ខណៈពិសេសសប្តាហ៍ក្រោយ)',
+  '1) អត្ថបទ​ទៅ​ជា​សំឡេង',
+  '2) សំឡេងទៅអត្ថបទ',  
+  '3) រូបភាពទៅអក្សរ',
+  '4) រូបភាពទៅជាសំឡេង',
 ];
 
 export function WelcomeToast() {
