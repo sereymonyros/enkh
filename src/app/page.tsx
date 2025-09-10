@@ -27,6 +27,7 @@ import {
   SidebarTrigger,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -364,13 +365,16 @@ export default function Home() {
           <SidebarHeader>
             {/* You can add a header here, like a logo or title */}
           </SidebarHeader>
-          <SidebarContent className="justify-center items-center">
+          <SidebarContent>
+            {/* Content for the main section of the sidebar */}
+          </SidebarContent>
+          <SidebarFooter className="justify-center items-center">
             <SidebarMenu>
               <SidebarMenuItem>
                  <ThemeToggle />
               </SidebarMenuItem>
             </SidebarMenu>
-          </SidebarContent>
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
         <div className='relative flex flex-col flex-1'>
