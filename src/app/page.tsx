@@ -364,7 +364,7 @@ export default function Home() {
   return (
     <TooltipProvider>
       <div className="dark min-h-screen w-full bg-gemini-gradient text-white flex flex-col font-body antialiased">
-        <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4" viewportRef={scrollAreaViewportRef}>
+        <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
           <div className="flex flex-col gap-6 pb-48 pt-4">
             {/* History */}
             {translationHistory.map(renderHistoryItem)}
