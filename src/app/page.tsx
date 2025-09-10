@@ -63,6 +63,8 @@ export default function Home() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
+  const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
+
 
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -273,9 +275,14 @@ export default function Home() {
 
 
   const startEditing = (item: HistoryItem) => {
+    setIsAnimatingOut(item.id);
     setHistoryBeforeEdit(translationHistory);
-    setEditingItemId(item.id);
-    setEditedText(item.originalText);
+
+    setTimeout(() => {
+        setEditingItemId(item.id);
+        setEditedText(item.originalText);
+        setIsAnimatingOut(null);
+    }, 500); 
   };
 
   const cancelEditing = () => {
@@ -327,14 +334,24 @@ export default function Home() {
   const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
         const isEditing = editingItemId === item.id;
+        const isAnimating = isAnimatingOut === item.id;
+
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
-            <Button variant="ghost" size="icon" className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => startEditing(item)}>
-                 <Pencil size={14} />
-            </Button>
+             <div className="relative h-8 w-8">
+               <div className={cn(
+                    "absolute inset-0 transition-all duration-300",
+                    isEditing ? "opacity-0 -translate-x-4" : "opacity-100 translate-x-0"
+                  )}
+               >
+                <Button variant="ghost" size="icon" className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => startEditing(item)}>
+                     <Pencil size={14} />
+                </Button>
+               </div>
+            </div>
             <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
              {isEditing ? (
-                 <div className="relative border border-blue-400 p-1.5 rounded-2xl">
+                 <div className="relative border border-blue-400 p-1.5 rounded-2xl animate-in slide-in-from-right-4 duration-500">
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
@@ -362,7 +379,12 @@ export default function Home() {
                    </div>
                  </div>
               ) : (
-                <p className="text-lg">{item.originalText}</p>
+                 <p className={cn(
+                    "text-lg transition-all duration-500",
+                     isAnimating && "animate-out slide-out-to-left-4"
+                  )}>
+                    {item.originalText}
+                 </p>
               )}
             </div>
           </div>
@@ -515,3 +537,4 @@ export default function Home() {
 
     
 
+    
