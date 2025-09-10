@@ -96,4 +96,8 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+  .bg-gemini-gradient {
+    background-color: #0d0f19;
+    background-image: radial-gradient(ellipse 80% 50% at 50% 120%, #0d1a33, #0d0f19);
+  }
 }

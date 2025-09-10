@@ -323,7 +323,7 @@ export default function Home() {
 
   return (
     <TooltipProvider>
-      <div className="dark min-h-screen w-full bg-[#131314] text-white flex flex-col font-body antialiased">
+      <div className="dark min-h-screen w-full bg-gemini-gradient text-white flex flex-col font-body antialiased">
         <main className="flex-1 flex flex-col items-center p-4 gap-4 relative overflow-y-auto pb-48">
            <ScrollArea className="w-full max-w-2xl flex-1 no-scrollbar" viewportRef={scrollAreaViewportRef}>
              <div className="flex flex-col gap-6 pb-4">
