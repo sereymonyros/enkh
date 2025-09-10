@@ -123,19 +123,13 @@ export default function Home() {
           variant: 'destructive',
         });
         if (isEditing && editedMessageId) {
-             // If edit fails, revert the change by finding the original state
-            setTranslationHistory(prev => {
-                const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
-                const originalAiMessage = translationHistory.find(item => item.id === editedMessageId + 1);
-                if (originalUserMessage && originalAiMessage) {
-                    const newHistory = [...prev];
-                    const userIndex = newHistory.findIndex(item => item.id === editedMessageId);
-                    newHistory[userIndex] = originalUserMessage;
-                    newHistory[userIndex + 1] = originalAiMessage;
-                    return newHistory;
-                }
-                return prev;
-            });
+             setTranslationHistory(prev => {
+                const messageIndex = prev.findIndex(item => item.id === editedMessageId);
+                if (messageIndex === -1) return prev;
+                 const newHistory = [...prev];
+                 newHistory[messageIndex + 1] = { ...newHistory[messageIndex + 1], translatedText: 'Language detection failed.'};
+                 return newHistory;
+             });
         } else {
             setTranslationHistory(prev => prev.slice(0, -1));
         }
@@ -221,19 +215,13 @@ export default function Home() {
         variant: 'destructive',
       });
        if (isEditing && editedMessageId) {
-             // If edit fails, revert the change by finding the original state
-            setTranslationHistory(prev => {
-                const originalUserMessage = translationHistory.find(item => item.id === editedMessageId);
-                const originalAiMessage = translationHistory.find(item => item.id === editedMessageId + 1);
-                if (originalUserMessage && originalAiMessage) {
-                    const newHistory = [...prev];
-                    const userIndex = newHistory.findIndex(item => item.id === editedMessageId);
-                    newHistory[userIndex] = originalUserMessage;
-                    newHistory[userIndex + 1] = originalAiMessage;
-                    return newHistory;
-                }
-                return prev;
-            });
+             setTranslationHistory(prev => {
+                const messageIndex = prev.findIndex(item => item.id === editedMessageId);
+                if (messageIndex === -1) return prev;
+                 const newHistory = [...prev];
+                 newHistory[messageIndex + 1] = { ...newHistory[messageIndex + 1], translatedText: 'Translation failed.'};
+                 return newHistory;
+             });
         } else {
             setTranslationHistory(prev => prev.slice(0, -1));
         }
@@ -242,7 +230,7 @@ export default function Home() {
       setEditingItemId(null);
       setEditedText("");
     }
-  }, [toast, translationHistory]);
+  }, [toast]);
 
 
   const startEditing = (item: HistoryItem) => {
@@ -257,7 +245,7 @@ export default function Home() {
 
   const submitEdit = () => {
     if (editingItemId === null) return;
-
+  
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
     if (messageIndex === -1 || !translationHistory[messageIndex + 1]) {
       cancelEditing();
@@ -306,7 +294,7 @@ export default function Home() {
                    <Textarea
                      value={editedText}
                      onChange={(e) => setEditedText(e.target.value)}
-                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-foreground/80 p-0 pr-12"
+                     className="bg-transparent border-transparent text-lg resize-none flex-1 focus-visible:ring-0 text-foreground/80 p-0 pr-16"
                      autoFocus
                      onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -321,10 +309,10 @@ export default function Home() {
                    />
                    <div className="absolute top-0 right-0 flex items-center gap-1">
                      <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={10} />
+                       <X size={16} />
                      </Button>
                      <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={10} />
+                       <Check size={16} />
                      </Button>
                    </div>
                  </div>
@@ -335,7 +323,6 @@ export default function Home() {
           </div>
         );
     } else {
-       // If the AI message is currently being re-translated, show a spinner.
       if (item.translatedText === '...') {
         return (
           <div key={item.id} className="flex justify-start items-start gap-3">
@@ -350,13 +337,13 @@ export default function Home() {
             <div className="flex items-center gap-0.5">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
-                  <Copy size={10} />
+                  <Copy size={14} />
                </Button>
                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8">
-                  <Volume2 size={10} />
+                  <Volume2 size={14} />
                </Button>
                {item.fromCache && (
-                <Database size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Database size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                )}
             </div>
              <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
@@ -388,10 +375,8 @@ export default function Home() {
         <SidebarInset>
         <div className='relative flex flex-col flex-1'>
           <div className="absolute top-4 right-4 z-20">
-            <SidebarTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu />
-                </Button>
+            <SidebarTrigger variant="ghost" size="icon">
+                <Menu />
             </SidebarTrigger>
           </div>
         <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
@@ -411,7 +396,7 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 right-0 z-10 bg-background/50 backdrop-blur-sm">
           <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
             <div className={cn(
-                "border border-blue-600 rounded-full p-2 flex items-center gap-2",
+                "border border-input rounded-full p-2 flex items-center gap-2",
                 isShaking ? 'animate-shake' : ''
               )}>
               <Textarea
