@@ -329,7 +329,7 @@ export default function Home() {
         const isEditing = editingItemId === item.id;
         return (
           <div key={item.id} className="group flex justify-end items-center gap-2">
-            <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => startEditing(item)}>
+            <Button variant="ghost" size="icon" className="w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => startEditing(item)}>
                  <Pencil size={14} />
             </Button>
             <div className="bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]">
@@ -352,12 +352,12 @@ export default function Home() {
                       }
                     }}
                    />
-                   <div className="absolute top-0 right-0 flex items-center gap-1">
+                   <div className="absolute top-0 right-0 flex items-center">
                      <Button variant="ghost" size="icon" onClick={cancelEditing} className="w-8 h-8 shrink-0">
-                       <X size={16} />
+                       <X size={14} />
                      </Button>
                      <Button variant="ghost" size="icon" onClick={submitEdit} className="w-8 h-8 shrink-0">
-                       <Check size={16} />
+                       <Check size={14} />
                      </Button>
                    </div>
                  </div>
@@ -382,14 +382,14 @@ export default function Home() {
             <div className="flex items-center">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
+                <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" onClick={() => handleCopyToClipboard(item.translatedText)}>
                     <Copy size={14} />
                 </Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
+                <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" disabled={true}>
                     <Volume2 size={14} />
                 </Button>
                 {item.fromCache && (
-                  <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
+                  <Button variant="ghost" size="icon" className="w-8 h-8 transition-opacity" disabled={true}>
                     <Database size={14} />
                   </Button>
                 )}
