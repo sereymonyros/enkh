@@ -416,7 +416,7 @@ export default function Home() {
               )}>
               <Textarea
                 placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
-                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0"
+                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-sm"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 rows={1}
@@ -435,7 +435,7 @@ export default function Home() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="bg-card text-foreground rounded-full w-12 h-12"
+                      className="bg-card text-blue-400 rounded-full w-12 h-12 hover:text-blue-500"
                       onClick={() => handleTranslate(inputText)}
                       disabled={isLoading || editingItemId !== null}
                     >
