@@ -8,7 +8,7 @@ import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
 import {
   Tooltip,
@@ -57,7 +57,6 @@ export default function Home() {
   const [inputText, setInputText] = useState('Hello');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
-  const { toast } = useToast();
   const [isShaking, setIsShaking] = useState(false);
   const [videoFinished, setVideoFinished] = useState(false);
 
@@ -151,11 +150,8 @@ export default function Home() {
       const currentDetectedLang = detectionResult.language;
 
       if (currentDetectedLang === 'unknown') {
-        toast({
-          title: 'Language Not Detected',
-          description:
-            'Could not determine the input language. Please use English or Khmer.',
-          variant: 'destructive',
+        toast.error('Language Not Detected', {
+          description: 'Could not determine the input language. Please use English or Khmer.',
         });
         if (isEditing && editedMessageId) {
              setTranslationHistory(prev => {
@@ -248,11 +244,8 @@ export default function Home() {
     } catch (error) {
       if (translationRequestRef.current.isCancelled) return;
       console.error('Translation error:', error);
-      toast({
-        title: 'Translation Failed',
-        description:
-          'An error occurred while translating the text. Please try again.',
-        variant: 'destructive',
+      toast.error('Translation Failed', {
+        description: 'An error occurred while translating the text. Please try again.',
       });
        if (isEditing && editedMessageId) {
              setTranslationHistory(prev => {
@@ -273,7 +266,7 @@ export default function Home() {
       setEditedText("");
       setHistoryBeforeEdit(null);
     }
-  }, [toast, historyBeforeEdit]);
+  }, [historyBeforeEdit]);
 
 
   const startEditing = (item: HistoryItem) => {
@@ -323,10 +316,10 @@ export default function Home() {
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      toast({ title: 'Copied to clipboard!' });
+      toast.success('Copied to clipboard!');
     }, (err) => {
       console.error('Could not copy text: ', err);
-      toast({ title: 'Failed to copy', variant: 'destructive' });
+      toast.error('Failed to copy');
     });
   };
 
@@ -551,11 +544,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
-
-    
-
-    
