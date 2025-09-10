@@ -6,6 +6,7 @@ import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCi
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
+import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -175,48 +176,83 @@ export default function Home() {
       const sourceLang = currentDetectedLang;
       const targetLang = sourceLang === 'en' ? 'km' : 'en';
       const normalizedInput = normalizeText(trimmedInput);
+      
+      let translatedText: string | null = null;
+      let fromCache = false;
 
-      // --- LAYER 2: CHECK INDEXEDDB (LOCAL CACHE) ---
-      console.log('2. LOCAL CHECK: Checking for translation in IndexedDB...');
-      const cached = await getTranslationFromDb(
+      // --- LAYER 1: CHECK INDEXEDDB (LOCAL-ONLY CACHE) ---
+      console.log('2. LOCAL/USER CHECK: Checking for translation in IndexedDB...');
+      const iDbCache = await getTranslationFromDb(
         normalizedInput,
         sourceLang,
         targetLang
       );
 
-      let translatedText: string;
-      let fromCache = false;
+      if (iDbCache) {
+          const age = Date.now() - iDbCache.createdAt.getTime();
+          if (age < LOCAL_CACHE_STALE_MS) {
+            console.log( '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB.');
+            translatedText = iDbCache.translatedText;
+            fromCache = true;
+          } else {
+            console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate.');
+          }
+      } else {
+          console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
+      }
+      
+      // --- LAYER 2: CHECK FIRESTORE (OFFLINE-CAPABLE SHARED CACHE) ---
+      if (!translatedText) {
+          console.log('3. SHARED CHECK: Checking for translation in offline-capable Firestore cache...');
+          const firestoreCache = await getTranslationFromFirestoreCache(normalizedInput, sourceLang, targetLang);
+          if (firestoreCache) {
+              console.log( '   ✅ SHARED HIT: Found translation in Firestore cache.');
+              translatedText = firestoreCache.translatedText;
+              fromCache = true;
+              // Symmetrically populate the user's personal IndexedDB for future, faster lookups.
+              await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
+              await saveTranslationToDb(normalizeText(translatedText), targetLang, sourceLang, trimmedInput);
+          } else {
+              console.log('   ❌ SHARED MISS: Not found in Firestore cache.');
+          }
+      }
 
-      if (cached) {
-        const age = Date.now() - cached.createdAt.getTime();
-        if (age < LOCAL_CACHE_STALE_MS) {
-           console.log( '   ✅ LOCAL HIT (FRESH): Found fresh translation in IndexedDB. Flow complete.');
-           translatedText = cached.translatedText;
-           fromCache = true;
-        } else {
-            console.log( '   ⚠️ LOCAL HIT (STALE): Translation is older than 1 day. Will re-validate with server.');
+      // --- LAYER 3: CALL SERVER-SIDE FLOW (ONLINE ONLY) ---
+      if (!translatedText) {
+        // This block only runs if both local caches miss. It requires an internet connection.
+        console.log('4. SERVER CALL: Calling server-side flow...');
+        try {
             const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
             if (translationRequestRef.current.isCancelled) return;
             translatedText = result.translatedText;
-            fromCache = result.fromCache;
+            fromCache = result.fromCache; // This will be true if the server found it in *its* cache.
+            
+            // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
+            console.log('5. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
+            const normalizedTranslatedText = normalizeText(translatedText);
+            await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
+            await saveTranslationToDb(normalizedTranslatedText, targetLang, sourceLang, trimmedInput);
+        } catch(e) {
+            if (!navigator.onLine) {
+                toast.error("You are offline", {
+                    description: "This translation is not in the offline dictionary. Please connect to the internet to translate new words.",
+                });
+            } else {
+                throw e; // Re-throw other errors
+            }
         }
-      } else {
-        console.log('   ❌ LOCAL MISS: Not found in IndexedDB.');
-         // --- LAYER 3: CALL SERVER (FIRESTORE/API) ---
-        console.log('3. SERVER CHECK: Calling server-side flow...');
-        const result = await translateText({ text: trimmedInput, sourceLanguage: sourceLang, targetLanguage: targetLang });
-        if (translationRequestRef.current.isCancelled) return;
-        translatedText = result.translatedText;
-        fromCache = result.fromCache;
-
-         // --- CACHE WRITE: SAVE TO INDEXEDDB FOR FUTURE OFFLINE USE ---
-        console.log('4. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
-        const normalizedTranslatedText = normalizeText(translatedText);
-        await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
-        await saveTranslationToDb(normalizedTranslatedText, targetLang, sourceLang, trimmedInput);
       }
       
       if (translationRequestRef.current.isCancelled) return;
+      
+      // If after all checks, we still don't have a translation, it's because the user is offline and it was a cache miss.
+      if (!translatedText) {
+          setTranslationHistory(prev => prev.slice(0, -1)); // Remove the user message
+          setIsLoading(false);
+          setEditingItemId(null);
+          return;
+      }
+
 
       const aiMessage: HistoryItem = {
         id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1, // Ensure unique ID
