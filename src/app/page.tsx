@@ -347,7 +347,7 @@ export default function Home() {
              {isEditing ? (
                  <div
                     className={cn(
-                        "relative w-full transition-all duration-500 ease-in-out",
+                        "relative w-full transition-all duration-700 ease-in-out",
                         isEditing ? "w-full opacity-100" : "w-0 opacity-0"
                     )}
                     >
