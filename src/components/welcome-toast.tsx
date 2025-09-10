@@ -45,10 +45,10 @@ export function WelcomeToast({ historyLength }: WelcomeToastProps) {
       return; // Stop further processing
     }
 
-    // Otherwise, set a 15-second timer to fade out
+    // Otherwise, set a 20-second timer to fade out
     const fadeOutTimer = setTimeout(() => {
       startFadeOut();
-    }, 15000);
+    }, 20000);
 
     // Cleanup timers on component unmount or when historyLength changes
     return () => {
