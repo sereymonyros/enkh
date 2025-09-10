@@ -364,7 +364,7 @@ export default function Home() {
           <SidebarHeader>
             {/* You can add a header here, like a logo or title */}
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="justify-center items-center">
             <SidebarMenu>
               <SidebarMenuItem>
                  <ThemeToggle />
@@ -441,5 +441,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
