@@ -16,6 +16,8 @@ import {
   User,
   GoogleAuthProvider,
   signInWithPopup,
+  getRedirectResult,
+  signInWithRedirect,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -67,34 +69,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // This listener handles all auth state changes.
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // Case 1: A user is signed in (either anonymous or Google).
-        setUser(currentUser);
-        setAuthState({ state: 'authenticated', user: currentUser });
-      } else {
-        // Case 2: No user is signed in. This happens on first load or after sign-out.
-        if (navigator.onLine) {
-          try {
-            // Attempt to create a new anonymous session. This will cause this listener to run again.
-            await signInAnonymously(auth);
-          } catch (error) {
-            console.error("Anonymous sign-in failed:", error);
-            // If even anonymous sign-in fails, we are unauthenticated.
-            setAuthState({ state: 'authenticated', user: null });
-          }
-        } else {
-          // If offline and no user is cached, we cannot sign in.
-          console.warn("Offline: Cannot create anonymous session. App will be in a limited state.");
-          setUser(null);
-          setAuthState({ state: 'authenticated', user: null });
+    // This effect runs once on initial load to handle the redirect result.
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result) {
+          // User has just signed in via redirect.
+          toast.success(`Welcome, ${result.user.displayName}!`);
+          // Sync their history from the cloud.
+          await syncHistory(result.user.uid);
         }
-      }
-    });
-
-    return () => unsubscribe(); // Cleanup the listener on unmount.
-  }, []); // Empty dependency array, runs once on mount
+        // If result is null, it means it's a normal page load, not a redirect.
+      })
+      .catch((error) => {
+        console.error("Google sign-in redirect error:", error);
+        toast.error("Google Sign-In Failed", {
+          description: error.message || "An unexpected error occurred during redirect."
+        });
+      })
+      .finally(() => {
+        // This listener handles all subsequent auth state changes.
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+          if (currentUser) {
+            // A user is signed in (anonymous or Google).
+            setUser(currentUser);
+            setAuthState({ state: 'authenticated', user: currentUser });
+          } else {
+            // No user is signed in, this happens on first visit or after sign-out.
+            try {
+              // Attempt to create a new anonymous session.
+              await signInAnonymously(auth);
+            } catch (error) {
+              console.error("Anonymous sign-in failed:", error);
+              setAuthState({ state: 'authenticated', user: null });
+            }
+          }
+        });
+        return () => unsubscribe();
+      });
+  }, [syncHistory]);
 
 
   const signOut = async () => {
@@ -117,33 +129,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    debugger;
     try {
-      // For desktop, use popup
-      const result = await signInWithPopup(auth, provider);
-      if (result && result.user) {
-        toast.success(`Welcome, ${result.user.displayName}!`);
-        await syncHistory(result.user.uid);
-      }
+      // Use redirect for all devices for maximum compatibility.
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
-
-      // Handle specific pop-up closed error for desktop
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.info("Google sign-in cancelled.", {
-          description: "You closed the pop-up without signing in."
-        });
-      } else if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-blocked') {
-        toast.error("Sign-in popup was blocked.", {
-          description: "Please allow popups for this site and try again."
-        });
-      }
-      else {
-        // Generic error for others
-        toast.error("Google Sign-In Failed", {
-          description: error.message || "An unexpected error occurred."
-        });
-      }
+      toast.error("Google Sign-In Failed", {
+        description: error.message || "An unexpected error occurred."
+      });
     }
   };
 
