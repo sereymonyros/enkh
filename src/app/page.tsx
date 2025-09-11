@@ -490,6 +490,22 @@ function PageContent() {
     }, 0);
   }, [translationHistory, isLoading]);
 
+  if (authState.state === 'loading') {
+    return (
+      <div style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))'
+      }}>
+          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+      </div>
+    );
+  }
+
   const handleCancel = () => {
     console.log('User cancelled translation.');
     translationRequestRef.current.isCancelled = true;
@@ -693,22 +709,6 @@ function PageContent() {
     }
   };
 
-  if (authState.state === 'loading') {
-    return (
-      <div style={{
-          position: 'fixed',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'hsl(var(--background))',
-          color: 'hsl(var(--foreground))'
-      }}>
-          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
-      </div>
-    );
-  }
-
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <CacheWarmer />
@@ -843,7 +843,7 @@ setIsFeedbackOpen(false);
             <SheetHeader className="sr-only">
               <SheetTitle>Recent History</SheetTitle>
             </SheetHeader>
-            <div className="relative p-2 border-b border-border h-14 flex items-center justify-end">
+            <div className="relative p-2 border-b border-border h-14 flex items-center justify-start">
               {localHistory.length > 0 && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -907,5 +907,6 @@ export default function Home() {
 }
 
     
+
 
 
