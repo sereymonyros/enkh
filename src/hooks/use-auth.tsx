@@ -48,7 +48,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
 
   const syncHistory = useCallback(async (uid: string) => {
-    // Only attempt to sync history if the user is online.
     if (!navigator.onLine) {
       console.log("Offline: Skipping history sync.");
       return;
@@ -66,60 +65,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // This effect runs once on initial load to handle the redirect result.
-    const handleRedirect = async () => {
-      try {
-        const result = await getRedirectResult(auth);
+    // This is the core listener for all auth changes.
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser); // Always set the user, even if null
+      setAuthState({ state: 'authenticated', user: currentUser });
+    });
+
+    // Handle the redirect result on initial load.
+    getRedirectResult(auth)
+      .then(async (result) => {
         if (result) {
           // User has just signed in via redirect.
           toast.success(`Welcome, ${result.user.displayName}!`);
-          // Sync their history from the cloud.
           await syncHistory(result.user.uid);
+        } else if (!auth.currentUser) {
+          // No redirect result and no current user, so sign in anonymously.
+          // This only runs on the very first visit.
+          signInAnonymously(auth).catch((error) => {
+            console.error("Anonymous sign-in failed on initial load:", error);
+          });
         }
-      } catch (error: any) {
-        console.error("Google sign-in redirect error:", error);
-        toast.error("Google Sign-In Failed", {
-          description: error.message || "An unexpected error occurred during redirect."
+      })
+      .catch((error) => {
+        console.error("Error processing redirect result:", error);
+        toast.error("Sign-In Failed", {
+          description: "There was a problem during sign-in. Please try again."
         });
-      }
-    };
-    handleRedirect();
-  }, [syncHistory]);
+      });
 
-  useEffect(() => {
-    // This listener handles all subsequent auth state changes.
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        // A user is signed in (anonymous or Google).
-        setUser(currentUser);
-        setAuthState({ state: 'authenticated', user: currentUser });
-      } else {
-        // No user is signed in, this happens on first visit or after sign-out.
-        try {
-          // Attempt to create a new anonymous session.
-          await signInAnonymously(auth);
-        } catch (error) {
-          console.error("Anonymous sign-in failed:", error);
-          setAuthState({ state: 'authenticated', user: null });
-        }
-      }
-    });
     return () => unsubscribe();
-  }, []);
+  }, [syncHistory]);
 
 
   const signOut = async () => {
     try {
-      const user = auth.currentUser;
-      const wasAnonymous = user?.isAnonymous;
-
       await firebaseSignOut(auth);
-      // onAuthStateChanged will handle creating a new anonymous user automatically.
-
-      if (!wasAnonymous) {
-        toast.success('You have been signed out.');
-      }
-
+      // onAuthStateChanged will handle the state change and trigger an anonymous sign-in
+      toast.success('You have been signed out.');
     } catch (error: any) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -129,12 +111,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect for all devices for maximum compatibility.
+      // Use redirect for maximum compatibility across all browsers and devices.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       toast.error("Google Sign-In Failed", {
-        description: error.message || "An unexpected error occurred."
+        description: error.message || "Could not start the sign-in process."
       });
     }
   };
