@@ -140,6 +140,7 @@ export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]>
 
 /**
  * Merges history from Firestore into the local IndexedDB, avoiding duplicates.
+ * This is a robust function to prevent race conditions and duplicate entries.
  * @param userId The UID of the user.
  * @param firestoreHistory The array of history items fetched from Firestore.
  */
@@ -147,57 +148,55 @@ export async function mergeFirestoreHistory(userId: string, firestoreHistory: an
     const db = await getDb();
     const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
     const store = tx.objectStore(HISTORY_STORE_NAME);
-    const firestoreIdIndex = store.index('by-firestore-id');
-    const userIndex = store.index('by-user');
 
-    for (const item of firestoreHistory) {
-        if (!item.id) continue; // Skip items without a firestore ID
+    for (const remoteItem of firestoreHistory) {
+        if (!remoteItem.id) continue; // Skip items without a firestore ID
 
         // 1. Check if a record with this Firestore ID already exists.
-        const existingById = await firestoreIdIndex.get(item.id);
+        const existingById = await store.index('by-firestore-id').get(remoteItem.id);
         if (existingById) {
-            continue; // Record already exists and is synced, do nothing.
+            continue; // Record is already synced. Do nothing.
         }
 
-        // 2. If not found, check for a "pending" local record that matches the content.
-        // This handles the case where a local record was created but not yet synced.
-        const firestoreDate = new Date(item.createdAt);
-        let potentialMatches = await userIndex.getAll(userId);
+        // 2. If not found by ID, search for a local-only "pending" record that matches the content.
+        // This handles the race condition where a local record was created but not yet updated with the Firestore ID.
         let matchFound = false;
-
-        for (const localItem of potentialMatches) {
-            // A "pending" record has no firestoreId.
+        const allLocalItems = await store.index('by-user').getAll(userId);
+        
+        for (const localItem of allLocalItems) {
+            // A "pending" record has no firestoreId and should match content.
             if (!localItem.firestoreId &&
-                localItem.originalText === item.originalText &&
-                localItem.translatedText === item.translatedText &&
-                // Check if the creation times are very close (e.g., within 5 seconds)
-                Math.abs(localItem.createdAt.getTime() - firestoreDate.getTime()) < 5000
+                localItem.originalText === remoteItem.originalText &&
+                localItem.translatedText === remoteItem.translatedText
             ) {
-                // Found a matching local record. Update it with the Firestore ID.
-                localItem.firestoreId = item.id;
+                // We found a matching local record. Update it with the Firestore ID.
+                localItem.firestoreId = remoteItem.id;
                 // It's good practice to use the server's timestamp as the source of truth.
-                localItem.createdAt = firestoreDate; 
+                localItem.createdAt = new Date(remoteItem.createdAt); 
                 await store.put(localItem);
                 matchFound = true;
-                break; // Stop searching once a match is found and updated.
+                break; // Stop searching once a match is found and updated for this remoteItem.
             }
         }
         
         // 3. If no match was found by ID or by content, add it as a new record.
+        // This means it's a genuinely new record from another device.
         if (!matchFound) {
             await store.add({
                 userId: userId,
-                firestoreId: item.id,
-                originalText: item.originalText,
-                translatedText: item.translatedText,
-                sourceLanguage: item.sourceLanguage,
-                targetLanguage: item.targetLanguage,
-                createdAt: firestoreDate,
+                firestoreId: remoteItem.id,
+                originalText: remoteItem.originalText,
+                translatedText: remoteItem.translatedText,
+                sourceLanguage: remoteItem.sourceLanguage,
+                targetLanguage: remoteItem.targetLanguage,
+                createdAt: new Date(remoteItem.createdAt),
             });
         }
     }
+    
     await tx.done;
 }
+
 
 /**
  * Associates a local history item with its new Firestore ID after a successful sync.
