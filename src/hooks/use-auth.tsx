@@ -21,6 +21,7 @@ import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type AuthState =
   | { state: 'loading' }
@@ -45,6 +46,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
+  const isMobile = useIsMobile();
 
   const syncHistory = useCallback(async (uid: string) => {
     // Only attempt to sync history if the user is online.
@@ -115,6 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    debugger;
     try {
       // For desktop, use popup
       const result = await signInWithPopup(auth, provider);
