@@ -16,9 +16,10 @@ import { broadcastFeedback } from '@/lib/broadcast-channel';
 type FeedbackFormProps = {
   isOpen: boolean;
   onClose: () => void;
+  onFeedbackSubmitted?: () => void;
 };
 
-export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
+export function FeedbackForm({ isOpen, onClose, onFeedbackSubmitted }: FeedbackFormProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
@@ -61,8 +62,15 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
 
     // 2. Broadcast the optimistic update to other tabs
     broadcastFeedback(newFeedback);
+    
+    // 3. Conditionally close the form or trigger the submitted callback
+    if (onFeedbackSubmitted) {
+        onFeedbackSubmitted();
+        resetForm(); // Reset form state since we are not calling handleClose
+    } else {
+        handleClose(); // Close form immediately if no callback is provided
+    }
 
-    handleClose(); // Close form immediately
 
     try {
         await submitFeedback({ rating, comment: feedbackText });
@@ -151,3 +159,5 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
     </Sheet>
   );
 }
+
+    

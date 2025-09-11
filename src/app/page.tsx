@@ -667,7 +667,14 @@ export default function Home() {
             </div>
         </div>
         </SidebarInset>
-        <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+        <FeedbackForm
+          isOpen={isFeedbackOpen}
+          onClose={() => setIsFeedbackOpen(false)}
+          onFeedbackSubmitted={() => {
+            setIsFeedbackOpen(false);
+            setIsFeedbackListOpen(true);
+          }}
+        />
         <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
           <SheetContent side="right" className="w-[80%] sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto flex flex-col items-center justify-center" hideCloseButton={true}>
             <SheetHeader className="sr-only">
@@ -692,6 +699,8 @@ export default function Home() {
     
 
 
+
+    
 
     
 
