@@ -690,20 +690,13 @@ function PageContent() {
                 {authState.state === 'authenticated' &&
                   user &&
                   (user.isAnonymous ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={signInWithGoogle}
-                        >
-                          <GoogleIcon className="h-5 w-5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        <p>Sign in with Google</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={signInWithGoogle}
+                    >
+                      <GoogleIcon className="h-5 w-5" />
+                    </Button>
                   ) : (
                     <div className="flex w-full items-center justify-center gap-2">
                       <Avatar className="h-8 w-8">
@@ -715,20 +708,13 @@ function PageContent() {
                           {user.displayName?.[0] || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={signOut}
-                          >
-                            <LogOut size={16} />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                          <p>Sign Out</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={signOut}
+                      >
+                        <LogOut size={16} />
+                      </Button>
                     </div>
                   ))}
               </div>
@@ -865,5 +851,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
