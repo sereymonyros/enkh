@@ -22,6 +22,7 @@ import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export type AuthState =
   | { state: 'loading' }
@@ -46,6 +47,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
+  const isMobile = useIsMobile();
 
   const syncHistory = useCallback(async (uid: string) => {
     if (!navigator.onLine) {
@@ -69,6 +71,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser); // Always set the user, even if null
       setAuthState({ state: 'authenticated', user: currentUser });
+
+      if (currentUser && !currentUser.isAnonymous) {
+        // If a real user is logged in, sync their history.
+        await syncHistory(currentUser.uid);
+      }
     });
 
     // Handle the redirect result on initial load.
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (result) {
           // User has just signed in via redirect.
           toast.success(`Welcome, ${result.user.displayName}!`);
-          await syncHistory(result.user.uid);
+          // History sync will be triggered by onAuthStateChanged.
         } else if (!auth.currentUser) {
           // No redirect result and no current user, so sign in anonymously.
           // This only runs on the very first visit.
