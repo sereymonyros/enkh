@@ -3,10 +3,10 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, LogIn } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, LogIn, History } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
-import { getTranslationFromDb, saveTranslationToDb } from '@/lib/db';
+import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +32,9 @@ import {
   SidebarFooter,
   SidebarMenuButton,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WelcomeToast } from '@/components/welcome-toast';
@@ -61,6 +64,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { formatDistanceToNow } from 'date-fns';
 
 
 // Define a type for a single history entry
@@ -173,6 +177,7 @@ function PageContent() {
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
   const { user, signInWithGoogle, signOut: firebaseSignOut, authLoading } = useAuth();
+  const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -183,6 +188,16 @@ function PageContent() {
         scrollAreaViewportRef.current.scrollHeight;
     }
   };
+
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    try {
+      const history = await getHistoryForUser(user.uid);
+      setLocalHistory(history);
+    } catch (error) {
+      console.error("Failed to fetch local history:", error);
+    }
+  }, [user]);
 
   useEffect(() => {
     seedDatabaseIfNeeded();
@@ -195,12 +210,15 @@ function PageContent() {
             id: doc.id,
             ...doc.data(),
         }));
-        // Update the feedback store with the full list
         setServerFeedback(feedbacks as any);
     });
 
     return () => unsubscribe();
   }, [setServerFeedback]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   useEffect(() => {
     // The timeout ensures that the DOM has updated before we try to scroll
@@ -216,11 +234,9 @@ function PageContent() {
     setIsLoading(false);
 
     if (editingItemId && historyBeforeEdit) {
-        // If we were editing, restore the history to its pre-edit state.
         setTranslationHistory(historyBeforeEdit);
         setHistoryBeforeEdit(null);
     } else {
-        // If it was a new message, remove the user's last message.
         setTranslationHistory(prev => {
             if (prev.length > 0 && prev[prev.length - 1].isUser) {
                 return prev.slice(0, -1);
@@ -228,7 +244,6 @@ function PageContent() {
             return prev;
         });
     }
-    // Always reset editing state on cancel.
     setEditingItemId(null);
     setEditedText('');
   };
@@ -253,14 +268,13 @@ function PageContent() {
         setInputText('');
     }
   
-    // If it's a new message, add the user message to history.
     if (!isEditing) {
         const userMessage: HistoryItem = {
           id: Date.now(),
           originalText: trimmedInput,
-          translatedText: '', // No translation for user message
-          sourceLanguage: 'en', // Placeholder
-          targetLanguage: 'km', // Placeholder
+          translatedText: '',
+          sourceLanguage: 'en',
+          targetLanguage: 'km',
           isUser: true,
         };
         setTranslationHistory(prev => [...prev, userMessage]);
@@ -273,19 +287,13 @@ function PageContent() {
       let targetLang: 'en' | 'km' | null = null;
       let fromCache = false;
   
-      // --- OFFLINE-FIRST CACHE CHECK ---
-      // This function checks both IndexedDB and Firestore's offline cache for a translation
-      // in either direction (en->km or km->en).
       const checkCaches = async (text: string, lang1: 'en' | 'km', lang2: 'en' | 'km') => {
-        // Check Layer 1: Private IndexedDB
         const iDbCache = await getTranslationFromDb(text, lang1, lang2);
         if (iDbCache && (Date.now() - iDbCache.createdAt.getTime() < LOCAL_CACHE_STALE_MS)) {
           return { translatedText: iDbCache.translatedText, source: lang1, target: lang2, fromCache: true };
         }
-        // Check Layer 2: Shared Firestore Offline Cache
         const firestoreCache = await getTranslationFromFirestoreCache(text, lang1, lang2);
         if (firestoreCache) {
-          // If found in shared cache, populate our faster private cache for next time.
           await saveTranslationToDb(text, lang1, lang2, firestoreCache.translatedText);
           return { translatedText: firestoreCache.translatedText, source: lang1, target: lang2, fromCache: true };
         }
@@ -313,21 +321,18 @@ function PageContent() {
         }
       }
   
-      // --- ONLINE-ONLY LOGIC ---
-      // This block only runs if we had a cache miss and the user is online.
       if (!translatedText) {
         if (!navigator.onLine) {
             toast.error("You are offline", {
                 description: "This translation is not in the offline dictionary. Please connect to the internet to translate new words.",
             });
-            setTranslationHistory(prev => prev.slice(0, -1)); // Remove the user message
+            setTranslationHistory(prev => prev.slice(0, -1));
             setIsLoading(false);
             return;
         }
 
         console.log('2. SERVER CALL: Calling server-side flows...');
         try {
-            // Step 2a: Detect the language on the server
             console.log('   -> 2a. DETECT: Detecting input language...');
             const detectionResult = await detectLanguage({ text: trimmedInput });
             if (translationRequestRef.current.isCancelled) return;
@@ -335,43 +340,50 @@ function PageContent() {
             
             if (detectedLang === 'unknown') {
                 toast.error('Language Not Detected', { description: 'Could not determine the input language. Please use English or Khmer.' });
-                throw new Error('Language detection failed'); // Throw to be caught by outer catch block
+                throw new Error('Language detection failed');
             }
             console.log(`      ✅ DETECTED: Language is '${detectedLang}'.`);
             
             const detectedSourceLang = detectedLang;
             const detectedTargetLang = detectedLang === 'en' ? 'km' : 'en';
 
-            // Step 2b: Translate the text on the server
             console.log('   -> 2b. TRANSLATE: Calling server-side translation...');
             const result = await translateText({ text: trimmedInput, sourceLanguage: detectedSourceLang, targetLanguage: detectedTargetLang });
             if (translationRequestRef.current.isCancelled) return;
             
             translatedText = result.translatedText;
-            fromCache = result.fromCache; // This will be true if the server found it in *its* cache.
+            fromCache = result.fromCache;
             sourceLang = detectedSourceLang;
             targetLang = detectedTargetLang;
             
-            // Step 2c: Symmetrically populate local caches for future offline use.
             console.log('3. LOCAL WRITE: Saving/updating translation in IndexedDB symmetrically.');
             await saveTranslationToDb(normalizedInput, sourceLang, targetLang, translatedText);
             await saveTranslationToDb(normalizeText(translatedText), targetLang, sourceLang, trimmedInput);
 
         } catch (e) {
-            // Re-throw to be handled by the final catch block
             throw e;
         }
       }
   
       if (translationRequestRef.current.isCancelled) return;
   
-      // If we still don't have a translation or essential language info, something went wrong.
       if (!translatedText || !sourceLang || !targetLang) {
           throw new Error("Translation process failed to produce a result.");
       }
   
+      if (user) {
+        await addHistoryItem({
+            userId: user.uid,
+            originalText: trimmedInput,
+            translatedText: translatedText,
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+        });
+        await fetchHistory();
+      }
+
       const aiMessage: HistoryItem = {
-        id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1, // Ensure unique ID
+        id: isEditing && editedMessageId ? editedMessageId + 1 : Date.now() + 1,
         originalText: trimmedInput,
         translatedText: translatedText,
         sourceLanguage: sourceLang,
@@ -407,7 +419,6 @@ function PageContent() {
                  return newHistory;
              });
         } else {
-            // Remove the optimistic user message on failure
             setTranslationHistory(prev => {
                 if (prev.length > 0 && prev[prev.length - 1].isUser) {
                     return prev.slice(0, -1);
@@ -423,7 +434,7 @@ function PageContent() {
       setEditedText("");
       setHistoryBeforeEdit(null);
     }
-  }, [hasStarted, historyBeforeEdit]);
+  }, [hasStarted, historyBeforeEdit, user, fetchHistory]);
 
 
   const startEditing = (item: HistoryItem) => {
@@ -444,26 +455,22 @@ function PageContent() {
   const submitEdit = () => {
     if (editingItemId === null) return;
   
-    // Find the original user message to edit
     const messageIndex = translationHistory.findIndex(item => item.id === editingItemId);
     if (messageIndex === -1) {
       cancelEditing();
       return;
     }
   
-    // Optimistically update the user's message text
     const newHistory = [...translationHistory];
     newHistory[messageIndex] = {
       ...newHistory[messageIndex],
       originalText: editedText,
     };
   
-    // Find the corresponding AI message and mark it as loading
-    // This assumes the AI message is always the next one.
     if (newHistory[messageIndex + 1] && !newHistory[messageIndex + 1].isUser) {
       newHistory[messageIndex + 1] = {
         ...newHistory[messageIndex + 1],
-        translatedText: '...', // Loading indicator
+        translatedText: '...',
       };
     }
     
@@ -480,6 +487,27 @@ function PageContent() {
     });
   };
 
+  const handleHistoryItemClick = (item: HistoryEntry) => {
+    const userMessage: HistoryItem = {
+      id: Date.now(),
+      originalText: item.originalText,
+      translatedText: '',
+      sourceLanguage: item.sourceLanguage,
+      targetLanguage: item.targetLanguage,
+      isUser: true,
+    };
+    const aiMessage: HistoryItem = {
+      id: Date.now() + 1,
+      originalText: item.originalText,
+      translatedText: item.translatedText,
+      sourceLanguage: item.sourceLanguage,
+      targetLanguage: item.targetLanguage,
+      isUser: false,
+      fromCache: true,
+    };
+    setTranslationHistory(prev => [...prev, userMessage, aiMessage]);
+    setOpenMobile(false);
+  };
 
   const renderHistoryItem = (item: HistoryItem, index: number) => {
     if (item.isUser) {
@@ -593,7 +621,6 @@ function PageContent() {
 
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
-        {/* <WelcomeToast historyLength={translationHistory.length} /> */}
         <CacheWarmer />
         {!videoFinished && (
           <video
@@ -650,7 +677,35 @@ function PageContent() {
                  </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent className="justify-center items-center">
+            <SidebarContent className="justify-start items-center">
+                <SidebarGroup className="p-0">
+                    <SidebarGroupLabel className="flex items-center gap-2">
+                        <History size={16} />
+                        <span>Recent History</span>
+                    </SidebarGroupLabel>
+                    <SidebarSeparator className="my-1"/>
+                    <ScrollArea className="h-full w-full">
+                        <div className="flex flex-col gap-2 p-2">
+                        {localHistory.length === 0 ? (
+                            <p className="text-xs text-muted-foreground p-2 text-center">No history yet.</p>
+                        ) : (
+                            localHistory.map((item) => (
+                                <button 
+                                    key={item.id}
+                                    className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
+                                    onClick={() => handleHistoryItemClick(item)}
+                                >
+                                    <p className="font-semibold truncate">{item.originalText}</p>
+                                    <p className="text-sm text-muted-foreground truncate">{item.translatedText}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+                                    </p>
+                                </button>
+                            ))
+                        )}
+                        </div>
+                    </ScrollArea>
+                </SidebarGroup>
             </SidebarContent>
           </div>
         </Sidebar>
@@ -665,10 +720,8 @@ function PageContent() {
             viewportRef={scrollAreaViewportRef}
         >
           <div className="flex flex-col gap-6 pb-48 pt-16">
-            {/* History */}
             {translationHistory.map(renderHistoryItem)}
 
-            {/* Loading Indicator for new messages */}
             {isLoading && !editingItemId && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
                 <div className="flex justify-start items-start gap-3">
                 <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1 animate-spin" />
@@ -677,7 +730,6 @@ function PageContent() {
           </div>
         </ScrollArea>
 
-        {/* Input Bar */}
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
             (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
