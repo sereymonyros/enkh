@@ -22,6 +22,9 @@ import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
+import { useIsMobile } from './use-mobile';
+import { signInWithPopup } from 'firebase/auth';
+
 
 export type AuthState =
   | { state: 'loading' }
@@ -46,6 +49,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
+  const isMobile = useIsMobile();
 
   const syncHistory = useCallback(async (uid: string) => {
     // Only attempt to sync history if the user is online.
@@ -66,11 +70,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // This function will be called once to set up the authentication listeners.
     const processAuth = async () => {
+      // First, check if we are coming back from a Google sign-in redirect.
+      // This needs to be handled before the main listener is set up.
       try {
-        // First, check if we are coming back from a Google sign-in redirect.
         const result = await getRedirectResult(auth);
         if (result) {
-          // If so, the user is signed in. onAuthStateChanged will handle the rest.
+          // If we get a result, a user is now signed in.
+          // The onAuthStateChanged listener below will handle setting the state.
           toast.success(`Welcome, ${result.user.displayName}!`);
         }
       } catch (error: any) {
@@ -79,43 +85,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Now, set up the primary listener for auth state changes.
-      // This will fire right away with the cached user, and again if the state changes.
+      // This will fire right away with the cached user (if any), and again if the state changes.
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
           // Case 1: A user is signed in (from cache, redirect, or previous session).
           setUser(currentUser);
           setAuthState({ state: 'authenticated', user: currentUser });
           if (!currentUser.isAnonymous) {
-            // Sync history for logged-in users.
+            // Sync history for logged-in (non-anonymous) users.
             await syncHistory(currentUser.uid);
           }
         } else {
           // Case 2: No user is signed in.
+          // This block runs if the user explicitly signs out, or on initial load if no one is cached.
           if (navigator.onLine) {
-            // If online, create a new anonymous session. This will cause onAuthStateChanged to run again.
+            // If the app is online, we create a new anonymous session.
+            // This will cause onAuthStateChanged to run again with the new anonymous user.
             try {
               await signInAnonymously(auth);
             } catch (error) {
               console.error("Anonymous sign-in failed:", error);
-              // If anonymous sign-in fails, we are in an unauthenticated state.
+              // If even anonymous sign-in fails, we move to an unauthenticated state.
               setAuthState({ state: 'authenticated', user: null }); 
             }
           } else {
-            // If OFFLINE, we can't create an anonymous user.
-            // We end the loading state, leaving the user as null. The UI will handle this.
-            console.warn("Offline: Cannot create anonymous session. The app will be in a read-only state until online.");
+            // If OFFLINE and no user is cached, we cannot create an anonymous user.
+            // We transition out of the loading state, leaving the user as null.
+            // The UI will handle this state (e.g., read-only mode).
+            console.warn("Offline: Cannot create anonymous session. App will be in a limited state.");
             setUser(null);
             setAuthState({ state: 'authenticated', user: null });
           }
         }
       });
 
-      return unsubscribe; // Return the cleanup function.
+      return unsubscribe; // Return the cleanup function provided by onAuthStateChanged.
     };
 
     const unsubscribePromise = processAuth();
 
-    // Return a cleanup function for the useEffect hook.
+    // Return a cleanup function for the useEffect hook to call when the component unmounts.
     return () => {
         unsubscribePromise.then(unsubscribe => {
             if (unsubscribe) {
@@ -140,8 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect for a more mobile-friendly experience.
-      await signInWithRedirect(auth, provider);
+        await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       toast.error("Google Sign-In Failed", {
