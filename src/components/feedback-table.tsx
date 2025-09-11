@@ -30,10 +30,10 @@ function isTimestamp(date: any): date is Timestamp {
 
 const StatusBadge = ({ status, className }: { status: Feedback['status'], className?: string }) => {
   const variant = {
-    new: 'outline',
+    new: 'destructive',
     viewed: 'secondary',
     'in-progress': 'default',
-    fixed: 'default', // Changed from 'destructive'
+    fixed: 'default', 
   }[status] as 'default' | 'secondary' | 'outline' | 'destructive' | undefined;
 
   return (
@@ -41,7 +41,8 @@ const StatusBadge = ({ status, className }: { status: Feedback['status'], classN
       variant={variant}
       className={cn(
         className,
-        status === 'fixed' && 'bg-blue-400 text-primary-foreground' // Added custom class for fixed status
+        status === 'fixed' && 'bg-blue-400 text-primary-foreground',
+        status === 'new' && 'text-destructive-foreground'
       )}
     >
       {status}
@@ -105,8 +106,8 @@ export function FeedbackTable() {
 
     // Sort the combined list by date, handling potential nulls
     allFeedback.sort((a, b) => {
-      const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : new Date(0);
-      const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : new Date(0);
+      const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : null;
+      const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : null;
       
       if (!dateA && !dateB) return 0;
       if (!dateA) return 1;
@@ -149,7 +150,7 @@ export function FeedbackTable() {
                         <p className="font-medium pr-12">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
                     </div>
                 </CardHeader>
-                 {feedback.status === 'fixed' ? (
+                 {feedback.status === 'fixed' || feedback.status === 'new' ? (
                   <StatusBadge status={feedback.status} className="absolute top-0 right-0 rounded-none rounded-bl-lg" />
                 ) : (
                     <div className="absolute bottom-2 right-2 text-right text-xs text-muted-foreground space-y-1">
@@ -180,11 +181,11 @@ export function FeedbackTable() {
                 </TableCell>
                 <TableCell className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</TableCell>
                 <TableCell>
-                    {feedback.status !== 'fixed' && <StatusBadge status={feedback.status} />}
+                    {(feedback.status !== 'fixed' && feedback.status !== 'new') && <StatusBadge status={feedback.status} />}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                   {feedback.status !== 'fixed' && renderDate(feedback.createdAt)}
-                   {feedback.status === 'fixed' && (
+                   {(feedback.status !== 'fixed' && feedback.status !== 'new') && renderDate(feedback.createdAt)}
+                   {(feedback.status === 'fixed' || feedback.status === 'new') && (
                      <StatusBadge status={feedback.status} className="absolute top-0 right-0 rounded-none rounded-bl-lg" />
                    )}
                 </TableCell>
