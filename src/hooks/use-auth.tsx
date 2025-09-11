@@ -59,24 +59,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setAuthState({ state: 'authenticated', user: currentUser });
-        // Sync history for both anonymous and non-anonymous users
-        await syncHistory(currentUser.uid);
-      } else {
-        // If no user, sign in anonymously. onAuthStateChanged will run again.
-        setAuthState({ state: 'loading'});
-        try {
-            await signInAnonymously(auth);
-        } catch (error) {
-            console.error("Anonymous sign-in failed:", error);
-            toast.error("Could not start a session. Please refresh the page.");
+    // This handles the result of a redirect sign-in.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // User successfully signed in via redirect.
+          // onAuthStateChanged will handle the rest.
+          toast.success(`Welcome, ${result.user.displayName}!`);
         }
-      }
-    });
-    return () => unsubscribe();
+      })
+      .catch((error) => {
+        // Handle errors here if needed.
+        console.error("Google redirect sign-in error:", error);
+        toast.error("Sign-in failed", { description: "Could not complete sign-in with Google."});
+      })
+      .finally(() => {
+        // Now, set up the regular auth state listener.
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                setAuthState({ state: 'authenticated', user: currentUser });
+                // Sync history for both anonymous and non-anonymous users
+                await syncHistory(currentUser.uid);
+            } else {
+                // If no user, sign in anonymously. onAuthStateChanged will run again.
+                setAuthState({ state: 'loading'});
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Anonymous sign-in failed:", error);
+                    toast.error("Could not start a session. Please refresh the page.");
+                }
+            }
+        });
+        return () => unsubscribe();
+      });
   }, [syncHistory]);
 
 
@@ -97,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
         // Use signInWithRedirect which is more mobile-friendly
         await signInWithRedirect(auth, provider);
-        // The result is handled by onAuthStateChanged after the redirect returns
+        // The result is handled by the getRedirectResult in the useEffect hook.
     } catch (error: any) {
         console.error("Google sign-in error:", error);
         toast.error("Google Sign-In Failed", {
