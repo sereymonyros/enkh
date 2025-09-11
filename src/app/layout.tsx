@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster as SonnerToaster } from 'sonner';
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/hooks/use-auth";
 
 export const metadata: Metadata = {
   title: "enkh",
@@ -36,8 +37,10 @@ export default function RootLayout({
           defaultTheme="dark"
           disableTransitionOnChange
         >
-          {children}
-          <SonnerToaster richColors />
+          <AuthProvider>
+            {children}
+            <SonnerToaster richColors />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

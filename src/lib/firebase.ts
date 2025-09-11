@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import {initializeApp, getApp, getApps} from 'firebase/app';
 import {getFirestore, enableIndexedDbPersistence} from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 // This configuration is PUBLIC and safe to expose in client-side code.
@@ -19,6 +20,8 @@ const firebaseConfig = {
 // This pattern prevents re-initializing the app on every hot-reload.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
 
 // Enable offline persistence.
 // This must be done after initializing Firestore.
@@ -41,4 +44,4 @@ try {
 }
 
 
-export {app, db};
+export {app, db, auth};
