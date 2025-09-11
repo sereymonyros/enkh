@@ -66,45 +66,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // This effect runs once on initial load to handle the redirect result
-    // and set up the auth state listener.
-    getRedirectResult(auth)
-      .then(async (result) => {
+    // This effect runs once on initial load to handle the redirect result.
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
           // User has just signed in via redirect.
           toast.success(`Welcome, ${result.user.displayName}!`);
           // Sync their history from the cloud.
           await syncHistory(result.user.uid);
         }
-        // If result is null, it means it's a normal page load, not a redirect.
-      })
-      .catch((error) => {
+      } catch (error: any) {
         console.error("Google sign-in redirect error:", error);
         toast.error("Google Sign-In Failed", {
           description: error.message || "An unexpected error occurred during redirect."
         });
-      })
-      .finally(() => {
-        // This listener handles all subsequent auth state changes.
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-          if (currentUser) {
-            // A user is signed in (anonymous or Google).
-            setUser(currentUser);
-            setAuthState({ state: 'authenticated', user: currentUser });
-          } else {
-            // No user is signed in, this happens on first visit or after sign-out.
-            try {
-              // Attempt to create a new anonymous session.
-              await signInAnonymously(auth);
-            } catch (error) {
-              console.error("Anonymous sign-in failed:", error);
-              setAuthState({ state: 'authenticated', user: null });
-            }
-          }
-        });
-        return () => unsubscribe();
-      });
+      }
+    };
+    handleRedirect();
   }, [syncHistory]);
+
+  useEffect(() => {
+    // This listener handles all subsequent auth state changes.
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // A user is signed in (anonymous or Google).
+        setUser(currentUser);
+        setAuthState({ state: 'authenticated', user: currentUser });
+      } else {
+        // No user is signed in, this happens on first visit or after sign-out.
+        try {
+          // Attempt to create a new anonymous session.
+          await signInAnonymously(auth);
+        } catch (error) {
+          console.error("Anonymous sign-in failed:", error);
+          setAuthState({ state: 'authenticated', user: null });
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
 
   const signOut = async () => {
