@@ -678,8 +678,39 @@ function PageContent() {
         )}
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
-            <SidebarHeader className="justify-center items-center">
-              <SidebarMenu className="gap-3">
+            <SidebarHeader>
+              <div className='p-2'>
+                {authState.state === 'loading' && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">Initializing session...</div>
+                )}
+                {authState.state === 'authenticated' && user && (
+                    user.isAnonymous ? (
+                        <Button variant="outline" onClick={signInWithGoogle} className="w-full">
+                            <GoogleIcon className="mr-2 h-4 w-4" />
+                            Sign in with Google
+                        </Button>
+                    ) : (
+                        <SidebarGroup>
+                             <SidebarGroupLabel className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                                    <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold truncate">{user.displayName}</span>
+                                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                                </div>
+                            </SidebarGroupLabel>
+                            <SidebarSeparator className="my-1"/>
+                            <Button variant="outline" size="sm" onClick={signOut}>
+                                <LogOut size={14} className="mr-2"/>
+                                Sign Out
+                            </Button>
+                        </SidebarGroup>
+                    )
+                )}
+              </div>
+              <SidebarMenu className="gap-3 justify-center items-center">
                 <SidebarMenuItem>
                   <ThemeToggle />
                 </SidebarMenuItem>
@@ -726,36 +757,7 @@ function PageContent() {
                 </SidebarGroup>
             </SidebarContent>
              <SidebarFooter>
-                {authState.state === 'loading' && (
-                    <div className="p-2 text-xs text-muted-foreground text-center">Initializing session...</div>
-                )}
-                {authState.state === 'authenticated' && user && (
-                    user.isAnonymous ? (
-                        <Button variant="outline" onClick={signInWithGoogle} className="w-full">
-                            <GoogleIcon className="mr-2 h-4 w-4" />
-                            Sign in with Google
-                        </Button>
-                    ) : (
-                        <SidebarGroup>
-                             <SidebarGroupLabel className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
-                                    <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-semibold truncate">{user.displayName}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                                </div>
-                            </SidebarGroupLabel>
-                            <SidebarSeparator className="my-1"/>
-                            <Button variant="outline" size="sm" onClick={signOut}>
-                                <LogOut size={14} className="mr-2"/>
-                                Sign Out
-                            </Button>
-                        </SidebarGroup>
-                    )
-                )}
-            </SidebarFooter>
+             </SidebarFooter>
           </div>
         </Sidebar>
         <SidebarInset>
