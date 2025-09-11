@@ -589,7 +589,7 @@ export default function Home() {
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader className="justify-center items-center">
-              <SidebarMenu className="gap-2">
+              <SidebarMenu className="gap-3">
                 <SidebarMenuItem>
                   <ThemeToggle />
                 </SidebarMenuItem>
