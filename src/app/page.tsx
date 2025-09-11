@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -514,12 +514,12 @@ function PageContent() {
     handleTranslate(editedText, true, editingItemId);
   };
 
-  const handleCopyToClipboard = (text: string) => {
+  const handleCopyToClipboard = (text: string, entity: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      toast.success('Copied to clipboard!');
+      toast.success(`${entity} copied to clipboard!`);
     }, (err) => {
-      console.error('Could not copy text: ', err);
-      toast.error('Failed to copy');
+      console.error(`Could not copy ${entity}: `, err);
+      toast.error(`Failed to copy ${entity}`);
     });
   };
 
@@ -631,7 +631,7 @@ function PageContent() {
             <div className="flex items-center">
                <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0" />
                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText)}>
+                <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => handleCopyToClipboard(item.translatedText, 'Translation')}>
                     <Copy size={14} />
                 </Button>
                 <Button variant="ghost" size="icon" className="w-8 h-8" disabled={true}>
@@ -716,6 +716,29 @@ function PageContent() {
                     </ScrollArea>
                 </SidebarGroup>
             </SidebarContent>
+             <SidebarFooter>
+                {user ? (
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="flex items-center gap-2">
+                            <User size={16}/>
+                            <span>Session ID</span>
+                        </SidebarGroupLabel>
+                        <SidebarSeparator className="my-1"/>
+                        <div className="flex items-center gap-2 p-2">
+                            <p className="text-xs text-muted-foreground truncate flex-1" title={user.uid}>{user.uid}</p>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyToClipboard(user.uid, 'User ID')}>
+                                <CopyIcon size={14}/>
+                            </Button>
+                        </div>
+                         <Button variant="outline" size="sm" onClick={signOut}>
+                            <LogOut size={14} className="mr-2"/>
+                            Reset Session
+                        </Button>
+                    </SidebarGroup>
+                ) : (
+                    <div className="p-2 text-xs text-muted-foreground text-center">Loading session...</div>
+                )}
+            </SidebarFooter>
           </div>
         </Sidebar>
         <SidebarInset>
@@ -770,7 +793,7 @@ function PageContent() {
           onClose={() => setIsFeedbackOpen(false)}
           onFeedbackSubmitted={() => {
             setOpenMobile(false);
-            setIsFeedbackOpen(false);
+setIsFeedbackOpen(false);
             setIsFeedbackListOpen(true);
           }}
         />
@@ -801,9 +824,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
-
-    
