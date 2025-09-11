@@ -7,7 +7,7 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb';
 
 // Define constants for the database. This avoids magic strings in the code.
 const DB_NAME = 'enkh-db'; // The name of our database.
-const DB_VERSION = 2; // The version of our database schema.
+const DB_VERSION = 3; // The version of our database schema.
 const TRANSLATIONS_STORE_NAME = 'translations'; // The name of the "table" (called an object store) inside the DB.
 const HISTORY_STORE_NAME = 'history';
 
@@ -43,7 +43,7 @@ interface EnkhDB extends DBSchema {
   [HISTORY_STORE_NAME]: {
     key: number;
     value: HistoryEntry;
-    indexes: { 'by-user': string, 'by-firestore-id': string };
+    indexes: { 'by-user': string; 'by-firestore-id': string };
   };
 }
 
@@ -66,6 +66,9 @@ const getDb = () => {
                 autoIncrement: true,
             });
             historyStore.createIndex('by-user', 'userId');
+        }
+        if (oldVersion < 3) {
+            const historyStore = transaction.objectStore(HISTORY_STORE_NAME);
             // Add an index for the Firestore ID to easily check for existing items during sync.
             historyStore.createIndex('by-firestore-id', 'firestoreId');
         }
@@ -147,6 +150,7 @@ export async function mergeFirestoreHistory(userId: string, firestoreHistory: an
     const firestoreIdIndex = store.index('by-firestore-id');
     
     for (const item of firestoreHistory) {
+        if (!item.id) continue; // Skip items without a firestore ID
         // Check if an item with this Firestore ID already exists locally.
         const existing = await firestoreIdIndex.get(item.id);
         if (!existing) {
