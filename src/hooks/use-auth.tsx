@@ -69,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const result = await getRedirectResult(auth);
         if (result) {
           toast.success(`Welcome, ${result.user.displayName}!`);
-          await syncHistory(result.user.uid);
+          // History sync will be handled by the onAuthStateChanged listener
         }
       } catch (error: any) {
         // Handle failed redirects gracefully.
@@ -79,17 +79,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
         if (currentUser) {
-          // If a user (Google or anonymous) is found in the cache or from the server, set state.
+          // A user is found (from cache, redirect, or server)
           setUser(currentUser);
           setAuthState({ state: 'authenticated', user: currentUser });
-          // If they are a real user, sync their history.
           if (!currentUser.isAnonymous) {
-            syncHistory(currentUser.uid);
+            await syncHistory(currentUser.uid);
           }
         } else {
-          // This block runs if there's no cached user and the server confirms no one is signed in.
+          // No user is currently signed in.
           if (navigator.onLine) {
-            // If online, create a new anonymous user. `onAuthStateChanged` will run again.
+            // If online, create a new anonymous user. onAuthStateChanged will run again.
             try {
               await signInAnonymously(auth);
             } catch (error) {
@@ -98,10 +97,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               toast.error("Could not start a session. Please refresh the page.");
             }
           } else {
-            // If OFFLINE and there's no cached user, we can't do anything.
-            // We set the state to authenticated with no user, which will show the sign-in button.
-            // This prevents the app from getting stuck in a loading loop.
-            console.warn("Offline: Cannot create anonymous session. Waiting to come online.");
+            // If OFFLINE, we can't create an anonymous user.
+            // We end the loading state, leaving the user as null. The UI will handle this.
+            console.warn("Offline: Cannot create anonymous session. User is not signed in.");
             setUser(null);
             setAuthState({ state: 'authenticated', user: null });
           }
@@ -126,7 +124,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // onAuthStateChanged will handle creating a new anonymous user automatically.
+      // onAuthStateChanged will handle creating a new anonymous user automatically when online.
       toast.success('You have been signed out.');
     } catch (error: any) {
       console.error('Sign-out failed:', error);
@@ -137,7 +135,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect for all devices. It's more reliable.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
@@ -169,3 +166,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

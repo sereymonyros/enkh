@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -90,7 +90,7 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
-const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) => {
+const WelcomeMessage = ({ user }: { user: any }) => {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -98,10 +98,6 @@ const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) 
   }, []);
 
   if (!isClient) {
-    return null;
-  }
-
-  if (isLoading) {
     return null;
   }
   
@@ -214,7 +210,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle } = useAuth() || {};
+  const { user, signOut, authState, signInWithGoogle } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -671,6 +667,14 @@ function PageContent() {
     }
   };
 
+  if (authState.state === 'loading') {
+    return (
+        <div className="fixed inset-0 flex items-center justify-center bg-background">
+            <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+        </div>
+    );
+  }
+
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <CacheWarmer />
@@ -678,8 +682,8 @@ function PageContent() {
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader>
               <div className="flex items-center justify-center p-2">
-                {authState?.state === 'authenticated' && user &&
-                  (user.isAnonymous ? (
+                {authState.state === 'authenticated' && user ? (
+                  user.isAnonymous ? (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -688,19 +692,19 @@ function PageContent() {
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                   ) : (
-                    
-                        <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={user.photoURL || ''}
-                              alt={user.displayName || 'User'}
-                            />
-                            <AvatarFallback>
-                              {user.displayName?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        </button>
-                  ))}
+                    <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={user.photoURL || ''}
+                          alt={user.displayName || 'User'}
+                        />
+                        <AvatarFallback>
+                          {user.displayName?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  )
+                ) : null}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
                 <SidebarMenuItem>
@@ -779,7 +783,7 @@ function PageContent() {
             !hasStarted && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} isLoading={authState?.state === 'loading'} />
+                <WelcomeMessage user={user} />
                 <InputArea
                     inputText={inputText}
                     setInputText={setInputText}
@@ -835,3 +839,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
