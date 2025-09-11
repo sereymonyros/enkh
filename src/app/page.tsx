@@ -668,8 +668,7 @@ function PageContent() {
     }
   };
 
-  // FIX: This conditional return causes the hook order to change.
-  // It must be moved after all other hook calls.
+  // This check must happen after all other hooks are called.
   if (authState.state === 'loading') {
     return (
       <div style={{
@@ -815,6 +814,9 @@ setIsFeedbackOpen(false);
         </Sheet>
          <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <SheetContent side="left" className="w-[80%] sm:max-w-xs overflow-y-auto flex flex-col p-0" hideCloseButton={true}>
+            <SheetHeader className="sr-only">
+              <SheetTitle>Recent History</SheetTitle>
+            </SheetHeader>
             <ScrollArea className="h-full w-full">
                 <div className="flex flex-col gap-1 p-2 pt-6">
                 {localHistory.length === 0 ? (
