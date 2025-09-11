@@ -7,7 +7,7 @@ import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCi
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
-import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry } from '@/lib/db';
+import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -177,7 +177,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
-  const { user, signInWithGoogle, signOut: firebaseSignOut, authLoading } = useAuth();
+  const { user, signInWithGoogle, signOut: firebaseSignOut, authLoading, syncHistory } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -218,8 +218,12 @@ function PageContent() {
   }, [setServerFeedback]);
 
   useEffect(() => {
+    // When the user changes (e.g., on login/logout), refetch the history.
+    // The syncHistory function in useAuth already handles fetching from the cloud,
+    // so this just updates the UI from the local DB.
     fetchHistory();
-  }, [fetchHistory]);
+  }, [user, fetchHistory]);
+
 
   useEffect(() => {
     // The timeout ensures that the DOM has updated before we try to scroll
@@ -373,27 +377,23 @@ function PageContent() {
       }
   
       if (user) {
-        // First, save to the local-first IndexedDB cache.
-        await addHistoryItem({
+        const historyData = {
             userId: user.uid,
             originalText: trimmedInput,
             translatedText: translatedText,
             sourceLanguage: sourceLang,
             targetLanguage: targetLang,
-        });
-        // Then, refresh the history displayed in the UI from the local DB.
+        };
+        // Save to local DB first and get the local ID.
+        const localId = await addHistoryItem(historyData);
+        // Then, refresh the history displayed in the UI.
         await fetchHistory();
         
-        // After, sync to the cloud in the background (fire and forget).
-        saveHistory({
-            userId: user.uid,
-            originalText: trimmedInput,
-            translatedText: translatedText,
-            sourceLanguage: sourceLang,
-            targetLanguage: targetLang,
+        // After, sync to the cloud in the background.
+        saveHistory(historyData).then(response => {
+            // After successful sync, update the local item with its Firestore ID.
+            updateHistoryItemWithFirestoreId(localId, response.documentId);
         }).catch(err => {
-            // Log sync errors but don't block the user.
-            // The user's data is safe locally.
             console.error("Failed to sync history to cloud:", err);
         });
       }

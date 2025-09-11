@@ -20,6 +20,8 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { getHistory } from '@/ai/flows/get-history';
+import { mergeFirestoreHistory } from '@/lib/db';
 
 // Define the shape of the authentication context
 interface AuthContextType {
@@ -27,6 +29,7 @@ interface AuthContextType {
   authLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  syncHistory: () => Promise<void>;
 }
 
 // Create the context with a default undefined value
@@ -41,6 +44,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const syncHistory = useCallback(async () => {
+    if (!auth.currentUser) return;
+    try {
+      console.log('Starting history sync...');
+      const firestoreHistory = await getHistory({ userId: auth.currentUser.uid });
+      await mergeFirestoreHistory(auth.currentUser.uid, firestoreHistory);
+      console.log('History sync completed successfully.');
+      // Optionally, you can trigger a UI refresh here if needed.
+    } catch (error) {
+      console.error("History sync failed:", error);
+    }
+  }, []);
+
   // Sign in anonymously on initial load
   const signInAnonymouslyOnce = useCallback(async () => {
     try {
@@ -50,8 +66,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('Signed in anonymously');
     } catch (error) {
       console.error('Anonymous sign-in failed:', error);
-      // Don't toast an error here, as it might be expected if not enabled.
-      // The app will just proceed without an anonymous user.
     }
   }, []);
 
@@ -64,6 +78,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (currentUser) {
         setUser(currentUser);
+        // Sync history for the logged-in user.
+        // This will run for both new sign-ins and returning users.
+        await syncHistory();
         setAuthLoading(false);
       } else {
         // If no user, try to sign in anonymously.
@@ -89,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isMounted = false;
       unsubscribe();
     };
-  }, [signInAnonymouslyOnce]);
+  }, [signInAnonymouslyOnce, syncHistory]);
 
 
   // Function to sign in with Google using redirect
@@ -123,6 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authLoading,
     signInWithGoogle,
     signOut,
+    syncHistory,
   };
 
   return (

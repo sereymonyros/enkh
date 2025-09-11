@@ -22,7 +22,8 @@ interface TranslationEntry {
 }
 
 export interface HistoryEntry {
-  id?: number;
+  id?: number; // Local auto-incrementing ID
+  firestoreId?: string; // ID from Firestore for syncing
   userId: string;
   originalText: string;
   translatedText: string;
@@ -30,6 +31,7 @@ export interface HistoryEntry {
   targetLanguage: 'en' | 'km';
   createdAt: Date;
 }
+
 
 // Define the entire database schema, including all its object stores and their indexes.
 interface EnkhDB extends DBSchema {
@@ -41,7 +43,7 @@ interface EnkhDB extends DBSchema {
   [HISTORY_STORE_NAME]: {
     key: number;
     value: HistoryEntry;
-    indexes: { 'by-user': string };
+    indexes: { 'by-user': string, 'by-firestore-id': string };
   };
 }
 
@@ -64,6 +66,8 @@ const getDb = () => {
                 autoIncrement: true,
             });
             historyStore.createIndex('by-user', 'userId');
+            // Add an index for the Firestore ID to easily check for existing items during sync.
+            historyStore.createIndex('by-firestore-id', 'firestoreId');
         }
       },
     });
@@ -107,14 +111,16 @@ export async function saveTranslationToDb(
  * Adds a new entry to the user's private translation history.
  * @param item The history item to add. The userId must be set.
  */
-export async function addHistoryItem(item: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<void> {
+export async function addHistoryItem(item: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<number> {
     const db = await getDb();
     const newEntry: HistoryEntry = {
         ...item,
         createdAt: new Date(),
     }
-    await db.add(HISTORY_STORE_NAME, newEntry);
+    const id = await db.add(HISTORY_STORE_NAME, newEntry);
+    return id;
 }
+
 
 /**
  * Retrieves the translation history for a specific user, sorted from newest to oldest.
@@ -127,4 +133,46 @@ export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]>
     // The items are not guaranteed to be sorted by date from the index,
     // so we sort them here explicitly in descending order (newest first).
     return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+/**
+ * Merges history from Firestore into the local IndexedDB, avoiding duplicates.
+ * @param userId The UID of the user.
+ * @param firestoreHistory The array of history items fetched from Firestore.
+ */
+export async function mergeFirestoreHistory(userId: string, firestoreHistory: any[]): Promise<void> {
+    const db = await getDb();
+    const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const firestoreIdIndex = store.index('by-firestore-id');
+    
+    for (const item of firestoreHistory) {
+        // Check if an item with this Firestore ID already exists locally.
+        const existing = await firestoreIdIndex.get(item.id);
+        if (!existing) {
+            // If it doesn't exist, add it to the local store.
+            await store.add({
+                userId: userId,
+                firestoreId: item.id,
+                originalText: item.originalText,
+                translatedText: item.translatedText,
+                sourceLanguage: item.sourceLanguage,
+                targetLanguage: item.targetLanguage,
+                createdAt: new Date(item.createdAt), // Convert from milliseconds
+            });
+        }
+    }
+    await tx.done;
+}
+
+/**
+ * Associates a local history item with its new Firestore ID after a successful sync.
+ */
+export async function updateHistoryItemWithFirestoreId(localId: number, firestoreId: string): Promise<void> {
+    const db = await getDb();
+    const item = await db.get(HISTORY_STORE_NAME, localId);
+    if (item) {
+        item.firestoreId = firestoreId;
+        await db.put(HISTORY_STORE_NAME, item);
+    }
 }
