@@ -87,6 +87,28 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
+const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) => {
+  if (isLoading) {
+    return (
+      <div className="text-center text-muted-foreground animate-pulse p-2">
+        Signing in...
+      </div>
+    );
+  }
+
+  if (user && !user.isAnonymous && user.displayName) {
+    const firstName = user.displayName.split(' ')[0];
+    return (
+      <div className="text-center text-lg font-semibold p-2">
+        Hello, {firstName}
+      </div>
+    );
+  }
+
+  return null;
+};
+
+
 type InputAreaProps = {
   inputText: string;
   setInputText: (text: string) => void;
@@ -669,15 +691,15 @@ function PageContent() {
                    {user ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="p-0 rounded-full h-8 w-8">
+                            <Button variant="ghost" className="p-0 rounded-full h-8 w-8" disabled={authLoading}>
                                <Avatar className="h-8 w-8">
                                 <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                <AvatarFallback>{user.isAnonymous ? 'A' : (user.displayName?.charAt(0) || 'U')}</AvatarFallback>
                                </Avatar>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{user.displayName || 'My Account'}</DropdownMenuLabel>
+                            <DropdownMenuLabel>{user.isAnonymous ? 'Anonymous' : (user.displayName || 'My Account')}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={firebaseSignOut} className="text-red-500">
                                 <LogOut className="mr-2 h-4 w-4" />
@@ -751,7 +773,8 @@ function PageContent() {
             (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
             !hasStarted && "flex items-center justify-center"
         )}>
-            <div className="w-full pointer-events-auto">
+             <div className="w-full pointer-events-auto">
+                {hasStarted && <WelcomeMessage user={user} isLoading={authLoading} />}
                  <InputArea
                     inputText={inputText}
                     setInputText={setInputText}
@@ -807,3 +830,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    

@@ -10,13 +10,13 @@ import {
   useCallback,
 } from 'react';
 import {
-  getRedirectResult,
   onAuthStateChanged,
   signInAnonymously,
-  signInWithRedirect,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
   User,
+  linkWithPopup,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -44,91 +44,73 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const syncHistory = useCallback(async () => {
-    if (!auth.currentUser) return;
+  const syncHistory = useCallback(async (uid: string) => {
     try {
       console.log('Starting history sync...');
-      const firestoreHistory = await getHistory({ userId: auth.currentUser.uid });
-      await mergeFirestoreHistory(auth.currentUser.uid, firestoreHistory);
+      const firestoreHistory = await getHistory({ userId: uid });
+      await mergeFirestoreHistory(uid, firestoreHistory);
       console.log('History sync completed successfully.');
-      // Optionally, you can trigger a UI refresh here if needed.
     } catch (error) {
       console.error("History sync failed:", error);
     }
   }, []);
 
-  // Sign in anonymously on initial load
-  const signInAnonymouslyOnce = useCallback(async () => {
-    try {
-      // Only attempt anonymous sign-in if there's no user.
-      if (auth.currentUser) return;
-      await signInAnonymously(auth);
-      console.log('Signed in anonymously');
-    } catch (error) {
-      console.error('Anonymous sign-in failed:', error);
-    }
-  }, []);
-
   useEffect(() => {
-    // This flag helps prevent race conditions
-    let isMounted = true;
-
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-       if (!isMounted) return;
-
+      setUser(currentUser); // Immediately set user state
       if (currentUser) {
-        setUser(currentUser);
-        // Sync history for the logged-in user.
-        // This will run for both new sign-ins and returning users.
-        await syncHistory();
-        setAuthLoading(false);
+        // If there's a user, sync their history.
+        if (!currentUser.isAnonymous) {
+          await syncHistory(currentUser.uid);
+        }
       } else {
-        // If no user, try to sign in anonymously.
-        await signInAnonymouslyOnce();
-        // The user state will be updated by the next onAuthStateChanged event if successful.
-        // If it fails, we still stop loading and proceed without a user.
-        setAuthLoading(false);
+        // If there's no user, sign in anonymously.
+        // This will trigger another onAuthStateChanged event.
+        try {
+          await signInAnonymously(auth);
+        } catch (error) {
+          console.error('Anonymous sign-in failed:', error);
+        }
       }
+      // Regardless of outcome, stop loading after the initial check is done.
+      setAuthLoading(false);
     });
 
-    // Handle the redirect result from Google Sign-In
-    getRedirectResult(auth)
-      .catch(error => {
-        console.error("Error getting redirect result:", error);
-        toast.error("Failed to sign in with Google. Please try again.");
-      })
-      .finally(() => {
-         if (isMounted) setAuthLoading(false);
-      });
+    return () => unsubscribe();
+  }, [syncHistory]);
 
-    // Cleanup subscription on unmount
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [signInAnonymouslyOnce, syncHistory]);
-
-
-  // Function to sign in with Google using redirect
   const signInWithGoogle = async () => {
     setAuthLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
+      let result;
+      if (auth.currentUser && auth.currentUser.isAnonymous) {
+        // If the user is anonymous, link their account instead of signing in.
+        // This preserves their UID and any data associated with it.
+        result = await linkWithPopup(auth.currentUser, provider);
+      } else {
+        // If there's no user or they are already a permanent user, do a normal sign-in.
+        result = await signInWithPopup(auth, provider);
+      }
+      // The onAuthStateChanged listener will handle setting the user and syncing history.
+      toast.success(`Welcome, ${result.user.displayName}!`);
+    } catch (error: any) {
       console.error('Google sign-in failed:', error);
-      toast.error('Could not sign in with Google. Please try again.');
+      toast.error('Could not sign in with Google.', {
+        description: error.message || 'Please try again later.',
+      });
+    } finally {
+      // Always set loading to false after the process is complete.
       setAuthLoading(false);
     }
   };
 
-  // Function to sign out
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
       // The onAuthStateChanged listener will handle setting user to null
-      // and then trigger anonymous sign-in again.
-      setUser(null);
+      // and then automatically trigger anonymous sign-in again.
+      toast.success('You have been signed out.');
     } catch (error) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -140,7 +122,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authLoading,
     signInWithGoogle,
     signOut,
-    syncHistory,
+    // syncHistory is now internal to the provider, but we could expose it if needed
+    syncHistory: async () => {
+      if (auth.currentUser) await syncHistory(auth.currentUser.uid);
+    }
   };
 
   return (
