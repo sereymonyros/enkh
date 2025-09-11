@@ -184,9 +184,10 @@ export default function Home() {
 
   useEffect(() => {
     setTimeout(() => {
-        scrollToBottom();
+      scrollToBottom();
     }, 0);
   }, [translationHistory, isLoading]);
+
 
   const handleCancel = () => {
     console.log('User cancelled translation.');
@@ -667,7 +668,7 @@ export default function Home() {
         </SidebarInset>
         <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
         <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
-           <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
+          <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
             <SheetHeader className="sr-only">
                 <SheetTitle>Feedback Submissions</SheetTitle>
                 <SheetDescription>
@@ -684,3 +685,4 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
