@@ -92,27 +92,30 @@ const InputArea = ({
 }: InputAreaProps) => (
   <div
     className={cn(
-      'w-full max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto',
+      'w-full max-w-3xl mx-auto px-4 py-4 flex flex-col items-center gap-3 pointer-events-auto',
       isShaking ? 'animate-shake' : ''
     )}
   >
-    <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
-      <Textarea
-        placeholder="សរសេរ..."
-        className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        rows={1}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            onTranslate();
-          }
-        }}
-        disabled={isEditing}
-      />
+    <div className="relative w-full">
+      <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
+        <Textarea
+          placeholder="សរសេរ..."
+          className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              onTranslate();
+            }
+          }}
+          disabled={isEditing}
+        />
+      </div>
+      <div className="absolute bottom-[-14px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[15px] border-t-blue-400"></div>
     </div>
-    <div className="flex justify-center items-center gap-4">
+    <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
         <Button
           size="icon"
@@ -677,3 +680,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
