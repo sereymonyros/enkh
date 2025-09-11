@@ -513,33 +513,35 @@ export default function Home() {
           />
         )}
         <Sidebar>
-          <SidebarHeader className="justify-center items-center">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                 <ThemeToggle />
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
-          <SidebarContent className="justify-center items-center">
-            <SidebarMenu>
-              {feedbackCount > 0 && (
+          <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
+            <SidebarHeader className="justify-center items-center">
+              <SidebarMenu>
                 <SidebarMenuItem>
-                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
-                    <List />
+                  <ThemeToggle />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent className="justify-center items-center">
+              <SidebarMenu>
+                {feedbackCount > 0 && (
+                  <SidebarMenuItem>
+                    <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
+                      <List />
+                    </Button>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarContent>
+            <SidebarFooter className="justify-center items-center">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
+                    <MessageSquare />
                   </Button>
                 </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter className="justify-center items-center">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
-                  <MessageSquare />
-                </Button>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
+              </SidebarMenu>
+            </SidebarFooter>
+          </div>
         </Sidebar>
         <SidebarInset>
         <div className='relative flex flex-col flex-1'>          
@@ -628,3 +630,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
