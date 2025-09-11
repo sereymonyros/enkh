@@ -91,12 +91,18 @@ const normalizeText = (text: string) => {
 };
 
 const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return null;
+  }
+
   if (isLoading) {
-    return (
-      <div className="text-center text-muted-foreground animate-pulse p-2">
-        Initializing session...
-      </div>
-    );
+    return null;
   }
   
   if (user && !user.isAnonymous && user.displayName) {
@@ -208,7 +214,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle } = useAuth();
+  const { user, signOut, authState, signInWithGoogle } = useAuth() || {};
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -668,25 +674,11 @@ function PageContent() {
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <CacheWarmer />
-        {!videoFinished && (
-          <video
-            className="background-video"
-            autoPlay
-            muted
-            playsInline
-            onEnded={() => setVideoFinished(true)}
-            src="/background.mp4"
-          />
-        )}
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader>
               <div className="flex items-center justify-center p-2">
-                {authState.state === 'loading' && (
-                  <div className="h-8 w-8" />
-                )}
-                {authState.state === 'authenticated' &&
-                  user &&
+                {authState?.state === 'authenticated' && user &&
                   (user.isAnonymous ? (
                     <Button
                       variant="ghost"
@@ -798,7 +790,7 @@ function PageContent() {
             !hasStarted && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} isLoading={authState.state === 'loading'} />
+                <WelcomeMessage user={user} isLoading={authState?.state === 'loading'} />
                 <InputArea
                     inputText={inputText}
                     setInputText={setInputText}

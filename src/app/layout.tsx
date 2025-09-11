@@ -2,8 +2,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster as SonnerToaster } from 'sonner';
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/hooks/use-auth";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "enkh",
@@ -12,11 +11,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode;
-  params: { locale: string };
 }>) {
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -32,16 +30,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            {children}
-            <SonnerToaster richColors />
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          {children}
+          <SonnerToaster richColors />
+        </Providers>
       </body>
     </html>
   );
