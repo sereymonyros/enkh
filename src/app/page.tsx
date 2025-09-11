@@ -683,9 +683,7 @@ function PageContent() {
             <SidebarHeader>
               <div className="flex items-center justify-center p-2">
                 {authState.state === 'loading' && (
-                  <div className="p-2 text-xs text-muted-foreground text-center">
-                    Initializing...
-                  </div>
+                  null
                 )}
                 {authState.state === 'authenticated' &&
                   user &&
