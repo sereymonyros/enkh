@@ -629,6 +629,4 @@ export default function Home() {
     </TooltipProvider>
     </SidebarProvider>
   );
-}
-
-    
+}    
