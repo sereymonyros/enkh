@@ -48,6 +48,7 @@ import {
   SheetDescription,
   SheetClose,
 } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 // Define a type for a single history entry
@@ -83,7 +84,8 @@ export default function Home() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
-
+  const [hasStarted, setHasStarted] = useState(false);
+  const isMobile = useIsMobile();
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -150,6 +152,10 @@ export default function Home() {
         setTimeout(() => setIsShaking(false), 820);
       }
       return;
+    }
+
+    if (!hasStarted) {
+        setHasStarted(true);
     }
   
     setIsLoading(true);
@@ -328,7 +334,7 @@ export default function Home() {
       setEditedText("");
       setHistoryBeforeEdit(null);
     }
-  }, [historyBeforeEdit]);
+  }, [hasStarted, historyBeforeEdit]);
 
 
   const startEditing = (item: HistoryItem) => {
@@ -495,6 +501,51 @@ export default function Home() {
     }
   };
 
+  const InputArea = () => (
+     <div className={cn(
+        "w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto",
+        isShaking ? 'animate-shake' : ''
+      )}>
+      <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
+        <Textarea
+          placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
+          className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          rows={1}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleTranslate(inputText);
+            }
+          }}
+          disabled={editingItemId !== null}
+        />
+      </div>
+      <div className="flex justify-center items-center gap-4">
+        {!isLoading && (
+              <Button
+                size="icon"
+                className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
+                onClick={() => handleTranslate(inputText)}
+                disabled={isLoading || editingItemId !== null}
+              >
+                <Send size={24} />
+              </Button>
+        )}
+        {isLoading && (
+          <Button
+                size="icon"
+                className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
+                onClick={handleCancel}
+              >
+                <StopCircle size={24} />
+              </Button>
+          )}
+      </div>
+    </div>
+  );
+
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -544,9 +595,15 @@ export default function Home() {
           </div>
         </Sidebar>
         <SidebarInset>
-        <div className='relative flex flex-col flex-1'>          
+        <div className='relative flex flex-col flex-1 h-screen'>          
           
-        <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
+        <ScrollArea 
+            className={cn(
+                "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
+                hasStarted ? "opacity-100" : "opacity-0"
+            )} 
+            viewportRef={scrollAreaViewportRef}
+        >
           <div className="flex flex-col gap-6 pb-48 pt-16">
             {/* History */}
             {translationHistory.map(renderHistoryItem)}
@@ -559,64 +616,31 @@ export default function Home() {
             )}
           </div>
         </ScrollArea>
+
         {/* Input Bar */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 bg-transparent pointer-events-none">
-          <div className="w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto">
-            <div className={cn(
-                "border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm",
-                isShaking ? 'animate-shake' : ''
-              )}>
-              <Textarea
-                placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
-                className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                rows={1}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleTranslate(inputText);
-                  }
-                }}
-                disabled={editingItemId !== null}
-              />
+        <div className={cn(
+            "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
+            isMobile ? "bottom-0" : (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
+            !isMobile && !hasStarted && "flex items-center justify-center"
+        )}>
+            <div className="w-full pointer-events-auto">
+                 <InputArea />
             </div>
-              <div className="flex justify-center items-center gap-4">
-              {!isLoading && (
-                    <Button
-                      size="icon"
-                      className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
-                      onClick={() => handleTranslate(inputText)}
-                      disabled={isLoading || editingItemId !== null}
-                    >
-                      <Send size={24} />
-                    </Button>
-              )}
-              {isLoading && (
-                <Button
-                      size="icon"
-                      className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
-                      onClick={handleCancel}
-                    >
-                      <StopCircle size={24} />
-                    </Button>
-                )}
-              </div>
-          </div>
+        </div>
+        
            <div className="fixed bottom-4 left-4 z-20 pointer-events-auto">
               <SidebarTrigger variant="ghost" size="icon" className="text-blue-400">
                   <Menu />
               </SidebarTrigger>
             </div>
         </div>
-        </div>
         </SidebarInset>
         <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
         <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
           <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
-            <SheetHeader>
-                <SheetTitle className="sr-only">Feedback Submissions</SheetTitle>
-                <SheetDescription className="sr-only">
+            <SheetHeader className="sr-only">
+                <SheetTitle>Feedback Submissions</SheetTitle>
+                <SheetDescription>
                     A list of all feedback submitted by users.
                 </SheetDescription>
             </SheetHeader>
@@ -630,3 +654,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }    
+
+    
