@@ -465,24 +465,6 @@ function PageContent() {
     }, 0);
   }, [translationHistory, isLoading]);
 
-  // FIX: This conditional return causes the hook order to change.
-  // It must be moved after all other hook calls.
-  // if (authState.state === 'loading') {
-  //   return (
-  //     <div style={{
-  //         position: 'fixed',
-  //         inset: 0,
-  //         display: 'flex',
-  //         alignItems: 'center',
-  //         justifyContent: 'center',
-  //         backgroundColor: 'hsl(var(--background))',
-  //         color: 'hsl(var(--foreground))'
-  //     }}>
-  //         <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
-  //     </div>
-  //   );
-  // }
-
   const handleCancel = () => {
     console.log('User cancelled translation.');
     translationRequestRef.current.isCancelled = true;
@@ -686,20 +668,20 @@ function PageContent() {
     }
   };
 
+  // FIX: This conditional return causes the hook order to change.
+  // It must be moved after all other hook calls.
   if (authState.state === 'loading') {
     return (
-      <div
-        style={{
+      <div style={{
           position: 'fixed',
           inset: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'hsl(var(--background))',
-          color: 'hsl(var(--foreground))',
-        }}
-      >
-        <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+          color: 'hsl(var(--foreground))'
+      }}>
+          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
       </div>
     );
   }
@@ -833,14 +815,8 @@ setIsFeedbackOpen(false);
         </Sheet>
          <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
           <SheetContent side="left" className="w-[80%] sm:max-w-xs overflow-y-auto flex flex-col p-0" hideCloseButton={true}>
-            <SheetHeader className="p-4 border-b">
-                <SheetTitle className="flex items-center gap-2">
-                    <History size={18} />
-                    Recent History
-                </SheetTitle>
-            </SheetHeader>
             <ScrollArea className="h-full w-full">
-                <div className="flex flex-col gap-1 p-2">
+                <div className="flex flex-col gap-1 p-2 pt-6">
                 {localHistory.length === 0 ? (
                     <p className="text-xs text-muted-foreground p-2 text-center">No history yet.</p>
                 ) : (
@@ -876,6 +852,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
