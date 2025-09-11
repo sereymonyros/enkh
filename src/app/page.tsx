@@ -513,14 +513,14 @@ export default function Home() {
           />
         )}
         <Sidebar>
-          <SidebarHeader>
+          <SidebarHeader className="justify-center items-center">
             <SidebarMenu>
               <SidebarMenuItem>
                  <ThemeToggle />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="justify-center items-center">
             <SidebarMenu>
               {feedbackCount > 0 && (
                 <SidebarMenuItem>
