@@ -207,14 +207,14 @@ function PageContent() {
   const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
-  const { feedbackCount, setServerFeedback } = useFeedbackStore();
-  
-  const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle } = useAuth();
-  const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
+
+  const { feedbackCount, setServerFeedback } = useFeedbackStore();
+  const { setOpenMobile } = useSidebar();
+  const { user, signOut, authState, signInWithGoogle } = useAuth();
+  const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -232,74 +232,6 @@ function PageContent() {
       console.error("Failed to fetch local history:", error);
     }
   }, [user]);
-
-  useEffect(() => {
-    seedDatabaseIfNeeded();
-    
-    // Listen for real-time updates from Firestore for feedback
-    const feedbacksCollection = collection(db, 'feedbacks');
-    const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const feedbacks = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
-        setServerFeedback(feedbacks as any);
-    });
-
-    return () => unsubscribe();
-  }, [setServerFeedback]);
-
-  useEffect(() => {
-    // When the user changes (e.g., on login/logout), refetch the history.
-    if(user) {
-      fetchHistory();
-    }
-  }, [user, fetchHistory]);
-
-
-  useEffect(() => {
-    // The timeout ensures that the DOM has updated before we try to scroll
-    setTimeout(() => {
-      scrollToBottom();
-    }, 0);
-  }, [translationHistory, isLoading]);
-
-  if (authState.state === 'loading') {
-    return (
-      <div style={{
-          position: 'fixed',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'hsl(var(--background))',
-          color: 'hsl(var(--foreground))'
-      }}>
-          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
-      </div>
-    );
-  }
-
-  const handleCancel = () => {
-    console.log('User cancelled translation.');
-    translationRequestRef.current.isCancelled = true;
-    setIsLoading(false);
-
-    if (editingItemId && historyBeforeEdit) {
-        setTranslationHistory(historyBeforeEdit);
-        setHistoryBeforeEdit(null);
-    } else {
-        setTranslationHistory(prev => {
-            if (prev.length > 0 && prev[prev.length - 1].isUser) {
-                return prev.slice(0, -1);
-            }
-            return prev;
-        });
-    }
-    setEditingItemId(null);
-    setEditedText('');
-  };
 
   const handleTranslate = useCallback(async (textToTranslate: string, isEditing = false, editedMessageId: number | null = null) => {
     const trimmedInput = textToTranslate.trim();
@@ -500,6 +432,76 @@ function PageContent() {
     }
   }, [hasStarted, historyBeforeEdit, user, fetchHistory]);
 
+  useEffect(() => {
+    seedDatabaseIfNeeded();
+    
+    // Listen for real-time updates from Firestore for feedback
+    const feedbacksCollection = collection(db, 'feedbacks');
+    const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const feedbacks = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        setServerFeedback(feedbacks as any);
+    });
+
+    return () => unsubscribe();
+  }, [setServerFeedback]);
+
+  useEffect(() => {
+    // When the user changes (e.g., on login/logout), refetch the history.
+    if(user) {
+      fetchHistory();
+    }
+  }, [user, fetchHistory]);
+
+
+  useEffect(() => {
+    // The timeout ensures that the DOM has updated before we try to scroll
+    setTimeout(() => {
+      scrollToBottom();
+    }, 0);
+  }, [translationHistory, isLoading]);
+
+  // FIX: This conditional return causes the hook order to change.
+  // It must be moved after all other hook calls.
+  // if (authState.state === 'loading') {
+  //   return (
+  //     <div style={{
+  //         position: 'fixed',
+  //         inset: 0,
+  //         display: 'flex',
+  //         alignItems: 'center',
+  //         justifyContent: 'center',
+  //         backgroundColor: 'hsl(var(--background))',
+  //         color: 'hsl(var(--foreground))'
+  //     }}>
+  //         <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+  //     </div>
+  //   );
+  // }
+
+  const handleCancel = () => {
+    console.log('User cancelled translation.');
+    translationRequestRef.current.isCancelled = true;
+    setIsLoading(false);
+
+    if (editingItemId && historyBeforeEdit) {
+        setTranslationHistory(historyBeforeEdit);
+        setHistoryBeforeEdit(null);
+    } else {
+        setTranslationHistory(prev => {
+            if (prev.length > 0 && prev[prev.length - 1].isUser) {
+                return prev.slice(0, -1);
+            }
+            return prev;
+        });
+    }
+    setEditingItemId(null);
+    setEditedText('');
+    setHistoryBeforeEdit(null);
+  };
 
   const startEditing = (item: HistoryItem) => {
     setHistoryBeforeEdit(translationHistory);
@@ -682,6 +684,23 @@ function PageContent() {
     }
   };
 
+  // FIX: This conditional return causes the hook order to change.
+  // It must be moved after all other hook calls.
+  if (authState.state === 'loading') {
+    return (
+      <div style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))'
+      }}>
+          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+      </div>
+    );
+  }
 
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
@@ -847,3 +866,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
