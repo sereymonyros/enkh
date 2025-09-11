@@ -692,23 +692,16 @@ function PageContent() {
                             Sign in with Google
                         </Button>
                     ) : (
-                        <SidebarGroup>
-                             <SidebarGroupLabel className="flex items-center gap-2">
-                                <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
-                                    <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-semibold truncate">{user.displayName}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                                </div>
-                            </SidebarGroupLabel>
-                            <SidebarSeparator className="my-1"/>
-                            <Button variant="outline" size="sm" onClick={signOut}>
-                                <LogOut size={14} className="mr-2"/>
-                                Sign Out
-                            </Button>
-                        </SidebarGroup>
+                        <div className="flex w-full items-center gap-2">
+                           <Avatar className="h-8 w-8">
+                               <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                               <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
+                           </Avatar>
+                           <Button variant="outline" size="sm" onClick={signOut} className="flex-1">
+                               <LogOut size={14} className="mr-2"/>
+                               Sign Out
+                           </Button>
+                       </div>
                     )
                 )}
               </div>
