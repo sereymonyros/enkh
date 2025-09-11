@@ -212,3 +212,23 @@ export async function updateHistoryItemWithFirestoreId(localId: number, firestor
         }
     }
 }
+
+/**
+ * Clears all history entries for a specific user from the local IndexedDB.
+ * @param userId The UID of the user whose history will be cleared.
+ */
+export async function clearHistoryForUser(userId: string): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
+  const store = tx.objectStore(HISTORY_STORE_NAME);
+  const index = store.index('by-user');
+  let cursor = await index.openCursor(userId);
+  while (cursor) {
+    await store.delete(cursor.primaryKey);
+    cursor = await cursor.continue();
+  }
+  await tx.done;
+  console.log(`Cleared local history for user: ${userId}`);
+}
+
+    

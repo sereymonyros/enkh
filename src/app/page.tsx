@@ -3,11 +3,11 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle, Trash2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
-import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId } from '@/lib/db';
+import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId, clearHistoryForUser } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -69,6 +69,17 @@ import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { GoogleIcon } from '@/components/icons/google-icon';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 // Define a type for a single history entry
@@ -435,6 +446,18 @@ function PageContent() {
       setHistoryBeforeEdit(null);
     }
   }, [hasStarted, historyBeforeEdit, user, fetchHistory]);
+
+  const handleClearHistory = async () => {
+    if (!user) return;
+    try {
+      await clearHistoryForUser(user.uid);
+      await fetchHistory(); // Refresh the history list from the DB (it will be empty)
+      toast.success("Local history has been cleared.");
+    } catch (error) {
+      console.error("Failed to clear history:", error);
+      toast.error("Failed to clear history.");
+    }
+  };
 
   useEffect(() => {
     seedDatabaseIfNeeded();
@@ -819,8 +842,34 @@ setIsFeedbackOpen(false);
             <SheetHeader className="sr-only">
               <SheetTitle>Recent History</SheetTitle>
             </SheetHeader>
+            {localHistory.length > 0 && (
+              <div className="p-2 border-b border-border">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Clear History
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete your translation history from this device. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleClearHistory}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
             <ScrollArea className="h-full w-full">
-                <div className="flex flex-col gap-1 p-2 pt-6">
+                <div className="flex flex-col gap-1 p-2">
                 {localHistory.length === 0 ? (
                     <p className="text-xs text-muted-foreground p-2 text-center">No history yet.</p>
                 ) : (
@@ -856,3 +905,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
