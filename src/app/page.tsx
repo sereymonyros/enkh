@@ -225,7 +225,10 @@ function PageContent() {
   };
 
   const fetchHistory = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+        setLocalHistory([]);
+        return;
+    }
     try {
       const history = await getHistoryForUser(user.uid);
       setLocalHistory(history);
@@ -452,9 +455,7 @@ function PageContent() {
 
   useEffect(() => {
     // When the user changes (e.g., on login/logout), refetch the history.
-    if(user) {
-      fetchHistory();
-    }
+    fetchHistory();
   }, [user, fetchHistory]);
 
 
@@ -855,11 +856,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
-
-    
-
-    

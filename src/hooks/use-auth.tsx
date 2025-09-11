@@ -60,8 +60,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       console.log('Starting history sync...');
       const firestoreHistory = await getHistory({ userId: uid });
-      await mergeFirestoreHistory(uid, firestoreHistory);
-      console.log('History sync completed successfully.');
+      if (firestoreHistory) {
+        await mergeFirestoreHistory(uid, firestoreHistory);
+        console.log('History sync completed successfully.');
+      }
     } catch (error) {
       console.error("History sync failed:", error);
     }
@@ -74,10 +76,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // This needs to be handled before the main listener is set up.
       try {
         const result = await getRedirectResult(auth);
-        if (result) {
+        if (result && !result.user.isAnonymous) {
           // If we get a result, a user is now signed in.
-          // The onAuthStateChanged listener below will handle setting the state.
+          // This is the best time to sync their cloud history to local.
           toast.success(`Welcome, ${result.user.displayName}!`);
+          await syncHistory(result.user.uid);
         }
       } catch (error: any) {
         console.error("Google redirect sign-in error:", error);
@@ -91,10 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Case 1: A user is signed in (from cache, redirect, or previous session).
           setUser(currentUser);
           setAuthState({ state: 'authenticated', user: currentUser });
-          if (!currentUser.isAnonymous) {
-            // Sync history for logged-in (non-anonymous) users.
-            await syncHistory(currentUser.uid);
-          }
+
         } else {
           // Case 2: No user is signed in.
           // This block runs if the user explicitly signs out, or on initial load if no one is cached.
