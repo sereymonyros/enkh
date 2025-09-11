@@ -698,29 +698,20 @@ function PageContent() {
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                   ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage
-                              src={user.photoURL || ''}
-                              alt={user.displayName || 'User'}
-                            />
-                            <AvatarFallback>
-                              {user.displayName?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={signOut}>
-                          <LogOut className="mr-2 h-4 w-4" />
-                          <span>Sign Out</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <button
+                      onClick={signOut}
+                      className="flex items-center justify-center gap-2 focus:outline-none rounded-full"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={user.photoURL || ''}
+                          alt={user.displayName || 'User'}
+                        />
+                        <AvatarFallback>
+                          {user.displayName?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                   ))}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
