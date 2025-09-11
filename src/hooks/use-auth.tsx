@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,6 +13,8 @@ import {
   signInAnonymously,
   signOut as firebaseSignOut,
   User,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -29,6 +30,7 @@ interface AuthContextType {
   user: User | null;
   authState: AuthState;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 // Create the context with a default undefined value
@@ -78,15 +80,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
-      // Signing out will trigger onAuthStateChanged, which will then
-      // create a new anonymous user automatically.
       await firebaseSignOut(auth);
-      setUser(null);
-      setAuthState({ state: 'loading' });
-      toast.success('Your session has been reset.');
+      // onAuthStateChanged will handle creating a new anonymous user
+      toast.success('You have been signed out.');
     } catch (error: any) {
       console.error('Sign-out failed:', error);
-      toast.error('Failed to reset session. Please try again.');
+      toast.error('Failed to sign out. Please try again.');
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    setAuthState({ state: 'loading' });
+    try {
+        await signInWithPopup(auth, provider);
+        // onAuthStateChanged will handle the user state update and history sync
+        toast.success("Successfully signed in with Google!");
+    } catch (error: any) {
+        console.error("Google sign-in error:", error);
+        toast.error("Google Sign-In Failed", {
+            description: error.message || "An unexpected error occurred."
+        });
+        // If sign-in fails, the user remains in their previous state (likely anonymous)
+        // onAuthStateChanged will ensure the UI reflects the actual user state.
+        if (user) {
+            setAuthState({ state: 'authenticated', user });
+        }
     }
   };
   
@@ -94,6 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     authState,
     signOut,
+    signInWithGoogle,
   };
 
   return (
@@ -111,5 +131,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    

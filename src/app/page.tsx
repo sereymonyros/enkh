@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -68,6 +67,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { GoogleIcon } from '@/components/icons/google-icon';
 
 
 // Define a type for a single history entry
@@ -197,7 +197,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState } = useAuth();
+  const { user, signOut, authState, signInWithGoogle } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -717,26 +717,34 @@ function PageContent() {
                 </SidebarGroup>
             </SidebarContent>
              <SidebarFooter>
-                {user ? (
-                    <SidebarGroup>
-                        <SidebarGroupLabel className="flex items-center gap-2">
-                            <User size={16}/>
-                            <span>Session ID</span>
-                        </SidebarGroupLabel>
-                        <SidebarSeparator className="my-1"/>
-                        <div className="flex items-center gap-2 p-2">
-                            <p className="text-xs text-muted-foreground truncate flex-1" title={user.uid}>{user.uid}</p>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyToClipboard(user.uid, 'User ID')}>
-                                <CopyIcon size={14}/>
-                            </Button>
-                        </div>
-                         <Button variant="outline" size="sm" onClick={signOut}>
-                            <LogOut size={14} className="mr-2"/>
-                            Reset Session
+                {authState.state === 'loading' && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">Initializing session...</div>
+                )}
+                {authState.state === 'authenticated' && user && (
+                    user.isAnonymous ? (
+                        <Button variant="outline" onClick={signInWithGoogle} className="w-full">
+                            <GoogleIcon className="mr-2 h-4 w-4" />
+                            Sign in with Google
                         </Button>
-                    </SidebarGroup>
-                ) : (
-                    <div className="p-2 text-xs text-muted-foreground text-center">Loading session...</div>
+                    ) : (
+                        <SidebarGroup>
+                             <SidebarGroupLabel className="flex items-center gap-2">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                                    <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold truncate">{user.displayName}</span>
+                                    <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                                </div>
+                            </SidebarGroupLabel>
+                            <SidebarSeparator className="my-1"/>
+                            <Button variant="outline" size="sm" onClick={signOut}>
+                                <LogOut size={14} className="mr-2"/>
+                                Sign Out
+                            </Button>
+                        </SidebarGroup>
+                    )
                 )}
             </SidebarFooter>
           </div>
