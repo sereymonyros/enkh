@@ -55,7 +55,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, AuthState } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -183,11 +183,10 @@ const InputArea = ({
   </div>
 );
 
-function PhoneAuth() {
-    const { signInWithPhone, verifyOtp, authLoading } = useAuth();
+function AuthArea() {
+    const { signInWithPhone, verifyOtp, authState } = useAuth();
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
-    const [step, setStep] = useState<'phone' | 'otp'>('phone');
     const [isSending, setIsSending] = useState(false);
 
     const handleSendCode = async () => {
@@ -198,7 +197,6 @@ function PhoneAuth() {
         setIsSending(true);
         try {
             await signInWithPhone(phone);
-            setStep('otp');
             toast.success("Verification code sent!");
         } catch (error: any) {
             console.error("Failed to send code:", error);
@@ -215,18 +213,21 @@ function PhoneAuth() {
         }
         try {
             await verifyOtp(otp);
-            // onAuthStateChanged will handle UI updates
             toast.success("Successfully signed in!");
         } catch (error: any) {
             console.error("Failed to verify code:", error);
             toast.error("Sign in failed", { description: error.message });
         }
     };
+    
+    if (authState.state === 'loading') {
+      return <div className="text-center text-muted-foreground animate-pulse p-4">Initializing...</div>
+    }
 
     return (
-        <div className="w-full max-w-sm space-y-4 p-4">
+        <div className="w-full max-w-sm space-y-4 p-4 pointer-events-auto">
              <div id="recaptcha-container"></div>
-            {step === 'phone' ? (
+            {authState.state !== 'otp_sent' ? (
                 <div className="flex items-center space-x-2">
                     <div className="relative flex-1">
                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -238,7 +239,7 @@ function PhoneAuth() {
                             className="pl-10"
                         />
                     </div>
-                    <Button onClick={handleSendCode} disabled={isSending || authLoading}>
+                    <Button onClick={handleSendCode} disabled={isSending}>
                         {isSending ? "Sending..." : "Send Code"}
                     </Button>
                 </div>
@@ -254,8 +255,8 @@ function PhoneAuth() {
                             className="pl-10"
                         />
                     </div>
-                    <Button onClick={handleVerifyCode} disabled={authLoading}>
-                        {authLoading ? "Verifying..." : "Verify"}
+                    <Button onClick={handleVerifyCode} disabled={authState.state === 'verifying_otp'}>
+                        {authState.state === 'verifying_otp' ? "Verifying..." : "Verify"}
                     </Button>
                 </div>
             )}
@@ -279,7 +280,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authLoading, syncHistory } = useAuth();
+  const { user, signOut, authState, syncHistory } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -323,7 +324,9 @@ function PageContent() {
     // When the user changes (e.g., on login/logout), refetch the history.
     // The syncHistory function in useAuth already handles fetching from the cloud,
     // so this just updates the UI from the local DB.
-    fetchHistory();
+    if(user && !user.isAnonymous) {
+      fetchHistory();
+    }
   }, [user, fetchHistory]);
 
 
@@ -736,6 +739,7 @@ function PageContent() {
     }
   };
 
+  const showInputArea = authState.state === 'authenticated' && !user?.isAnonymous;
 
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
@@ -771,7 +775,7 @@ function PageContent() {
                    {user && !user.isAnonymous ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="p-0 rounded-full h-8 w-8" disabled={authLoading}>
+                            <Button variant="ghost" className="p-0 rounded-full h-8 w-8">
                                <Avatar className="h-8 w-8">
                                 <AvatarImage src={user.photoURL || ''} alt={user.phoneNumber || 'U'} />
                                 <AvatarFallback>{user.phoneNumber?.substring(0, 2) || 'U'}</AvatarFallback>
@@ -787,9 +791,7 @@ function PageContent() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                    ) : (
-                       <PhoneAuth />
-                    )}
+                    ) : null}
                  </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
@@ -831,7 +833,7 @@ function PageContent() {
         <ScrollArea 
             className={cn(
                 "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
-                hasStarted ? "opacity-100" : "opacity-0"
+                (hasStarted || showInputArea) ? "opacity-100" : "opacity-0"
             )} 
             viewportRef={scrollAreaViewportRef}
         >
@@ -848,20 +850,26 @@ function PageContent() {
 
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
-            !hasStarted && "flex items-center justify-center"
+            (hasStarted || showInputArea) ? "bottom-0" : "top-1/2 -translate-y-1/2",
+            !(hasStarted || showInputArea) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                {hasStarted && <WelcomeMessage user={user} isLoading={authLoading} />}
-                 <InputArea
-                    inputText={inputText}
-                    setInputText={setInputText}
-                    isLoading={isLoading}
-                    isEditing={editingItemId !== null}
-                    isShaking={isShaking}
-                    onTranslate={() => handleTranslate(inputText)}
-                    onCancel={handleCancel}
-                 />
+                {showInputArea ? (
+                  <>
+                    <WelcomeMessage user={user} isLoading={false} />
+                    <InputArea
+                      inputText={inputText}
+                      setInputText={setInputText}
+                      isLoading={isLoading}
+                      isEditing={editingItemId !== null}
+                      isShaking={isShaking}
+                      onTranslate={() => handleTranslate(inputText)}
+                      onCancel={handleCancel}
+                    />
+                  </>
+                ) : (
+                   <AuthArea />
+                )}
             </div>
         </div>
         
@@ -908,5 +916,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    

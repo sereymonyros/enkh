@@ -23,10 +23,18 @@ import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
 
+export type AuthState =
+  | { state: 'loading' }
+  | { state: 'anonymous' }
+  | { state: 'authenticated'; user: User }
+  | { state: 'otp_sent' }
+  | { state: 'verifying_otp' }
+  | { state: 'error'; error: Error };
+
 // Define the shape of the authentication context
 interface AuthContextType {
   user: User | null;
-  authLoading: boolean;
+  authState: AuthState;
   signInWithPhone: (phoneNumber: string) => Promise<void>;
   verifyOtp: (otp: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -47,7 +55,7 @@ let confirmationResult: ConfirmationResult | null = null;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
 
   const syncHistory = useCallback(async (uid: string) => {
     try {
@@ -62,22 +70,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setAuthLoading(true);
       if (currentUser) {
         setUser(currentUser);
-        if (!currentUser.isAnonymous) {
+        if (currentUser.isAnonymous) {
+          setAuthState({ state: 'anonymous' });
+        } else {
+          setAuthState({ state: 'authenticated', user: currentUser });
           await syncHistory(currentUser.uid);
         }
       } else {
+        // This case should ideally not be hit if anonymous sign-in is robust
+        setAuthState({ state: 'loading'});
         await signInAnonymously(auth);
       }
-      setAuthLoading(false);
     });
     return () => unsubscribe();
   }, [syncHistory]);
 
   const signInWithPhone = async (phoneNumber: string) => {
-    setAuthLoading(true);
     try {
         if (!recaptchaVerifier) {
             recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
@@ -89,34 +99,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         
         confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
-
-    } catch (error) {
-      setAuthLoading(false);
+        setAuthState({ state: 'otp_sent' });
+    } catch (error: any) {
+      setAuthState({ state: 'error', error });
       // Reset the verifier if it fails.
       if (recaptchaVerifier) {
         recaptchaVerifier.clear();
         recaptchaVerifier = null;
       }
-      // Re-throw to be caught by the UI component
       throw error;
-    } finally {
-      // Don't set authLoading to false here, wait for OTP verification
     }
   };
 
   const verifyOtp = async (otp: string) => {
     if (!confirmationResult) {
-      throw new Error("No confirmation result available. Please send the code first.");
+      const error = new Error("No confirmation result available. Please send the code first.");
+      setAuthState({ state: 'error', error });
+      throw error;
     }
-    setAuthLoading(true);
+    setAuthState({ state: 'verifying_otp' });
     try {
       await confirmationResult.confirm(otp);
-      // onAuthStateChanged will handle the rest.
-    } catch (error) {
-       setAuthLoading(false);
+      // onAuthStateChanged will handle setting the 'authenticated' state.
+    } catch (error: any) {
+       setAuthState({ state: 'error', error });
        throw error;
     }
-    // `authLoading` will be set to false by onAuthStateChanged
   };
 
 
@@ -124,17 +132,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await firebaseSignOut(auth);
       setUser(null);
+      setAuthState({ state: 'loading' });
       toast.success('You have been signed out.');
-      // onAuthStateChanged will trigger anonymous sign-in
-    } catch (error) {
+      // onAuthStateChanged will trigger anonymous sign-in, which sets state to 'anonymous'
+    } catch (error: any) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
+       setAuthState({ state: 'error', error });
     }
   };
   
   const value = {
     user,
-    authLoading,
+    authState,
     signInWithPhone,
     verifyOtp,
     signOut,
@@ -158,5 +168,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
