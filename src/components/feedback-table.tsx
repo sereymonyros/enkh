@@ -29,9 +29,9 @@ function isTimestamp(date: any): date is Timestamp {
 
 const StatusBadge = ({ status }: { status: Feedback['status'] }) => {
   const variant = {
-    new: 'default',
+    new: 'outline',
     viewed: 'secondary',
-    'in-progress': 'outline',
+    'in-progress': 'default',
     fixed: 'destructive',
   }[status] as 'default' | 'secondary' | 'outline' | 'destructive' | undefined;
 

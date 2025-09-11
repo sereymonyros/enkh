@@ -612,12 +612,6 @@ export default function Home() {
         <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
         <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
           <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Feedback Submissions</SheetTitle>
-              <SheetDescription>
-                This list displays all feedback submitted by users and updates in real-time.
-              </SheetDescription>
-            </SheetHeader>
             <div className="py-4">
               <FeedbackTable />
             </div>
