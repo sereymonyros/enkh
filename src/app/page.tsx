@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle, Trash2, Terminal } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -219,6 +219,7 @@ function PageContent() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [hostname, setHostname] = useState('');
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -461,6 +462,11 @@ function PageContent() {
   };
 
   useEffect(() => {
+    // Get the hostname for display
+    if (typeof window !== 'undefined') {
+        setHostname(window.location.hostname);
+    }
+
     seedDatabaseIfNeeded();
     
     // Listen for real-time updates from Firestore for feedback
@@ -814,6 +820,17 @@ function PageContent() {
                   <Menu />
               </SidebarTrigger>
             </div>
+            {hostname && process.env.NODE_ENV === 'development' && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-4">
+                    <Alert>
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Development Info</AlertTitle>
+                        <AlertDescription>
+                            Add this hostname to Firebase authorized domains: <strong className="font-mono">{hostname}</strong>
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
         </div>
         </SidebarInset>
         <FeedbackForm
@@ -907,6 +924,3 @@ export default function Home() {
 }
 
     
-
-
-
