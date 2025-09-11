@@ -97,30 +97,31 @@ const InputArea = ({
       isShaking ? 'animate-shake' : ''
     )}
   >
-    <div className="relative w-full">
-      <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
-        <Textarea
-          placeholder="សរសេរ..."
-          className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          rows={1}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              onTranslate();
-            }
-          }}
-          disabled={isEditing}
-        />
-      </div>
-       <Image
-          src="https://firebasestorage.googleapis.com/v0/b/enkh-ovr0a.firebasestorage.app/o/airport.png?alt=media&token=db6b8b09-4b79-4c2c-9e81-a011b1a4bdce"
-          alt="Chat tail"
-          width={40}
-          height={40}
-          className="absolute bottom-[-18px] left-12"
-        />
+    <div className="relative w-full border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
+        <div className="relative w-full h-full flex items-center">
+            <Image
+                src="https://firebasestorage.googleapis.com/v0/b/enkh-ovr0a.firebasestorage.app/o/airport.png?alt=media&token=db6b8b09-4b79-4c2c-9e81-a011b1a4bdce"
+                alt="Textarea background"
+                layout="fill"
+                objectFit="cover"
+                className="absolute inset-0 z-0 rounded-full pointer-events-none opacity-20"
+                unoptimized
+            />
+            <Textarea
+              placeholder="សរសេរ..."
+              className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px] z-10"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onTranslate();
+                }
+              }}
+              disabled={isEditing}
+            />
+        </div>
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
@@ -691,3 +692,4 @@ export default function Home() {
     
 
     
+
