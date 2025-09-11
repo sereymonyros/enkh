@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { addFeedbackListener } from '@/lib/broadcast-channel';
+import { cn } from '@/lib/utils';
 
 
 type Feedback = {
@@ -32,10 +33,20 @@ const StatusBadge = ({ status, className }: { status: Feedback['status'], classN
     new: 'outline',
     viewed: 'secondary',
     'in-progress': 'default',
-    fixed: 'destructive',
+    fixed: 'default', // Changed from 'destructive'
   }[status] as 'default' | 'secondary' | 'outline' | 'destructive' | undefined;
 
-  return <Badge variant={variant} className={className}>{status}</Badge>;
+  return (
+    <Badge
+      variant={variant}
+      className={cn(
+        className,
+        status === 'fixed' && 'bg-blue-400 text-primary-foreground' // Added custom class for fixed status
+      )}
+    >
+      {status}
+    </Badge>
+  );
 };
 
 
@@ -94,11 +105,11 @@ export function FeedbackTable() {
 
     // Sort the combined list by date, handling potential nulls
     allFeedback.sort((a, b) => {
-      const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : null;
-      const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : null;
-
+      const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : new Date(0);
+      const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : new Date(0);
+      
       if (!dateA && !dateB) return 0;
-      if (!dateA) return 1; // Put items without a date last
+      if (!dateA) return 1;
       if (!dateB) return -1;
 
       return dateB.getTime() - dateA.getTime();
