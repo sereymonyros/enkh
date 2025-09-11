@@ -105,7 +105,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // onAuthStateChanged will handle the state change and trigger an anonymous sign-in
+      // After sign-out, onAuthStateChanged will fire. We then sign in a new anonymous user.
+      await signInAnonymously(auth);
       toast.success('You have been signed out.');
     } catch (error: any) {
       console.error('Sign-out failed:', error);
