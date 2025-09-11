@@ -381,8 +381,6 @@ function PageContent() {
         };
         // Save to local DB first and get the local ID.
         const localId = await addHistoryItem(historyData);
-        // Then, refresh the history displayed in the UI.
-        await fetchHistory();
         
         // After, sync to the cloud in the background.
         saveHistory(historyData).then(response => {
@@ -391,6 +389,9 @@ function PageContent() {
         }).catch(err => {
             console.error("Failed to sync history to cloud:", err);
         });
+        
+        // Then, refresh the history displayed in the UI.
+        await fetchHistory();
       }
 
       const aiMessage: HistoryItem = {
@@ -842,12 +843,11 @@ setIsFeedbackOpen(false);
             <SheetHeader className="sr-only">
               <SheetTitle>Recent History</SheetTitle>
             </SheetHeader>
-            <div className="relative p-2 border-b border-border">
-              <h3 className="text-lg font-semibold text-center">Recent History</h3>
+            <div className="relative p-2 border-b border-border h-14 flex items-center justify-end">
               {localHistory.length > 0 && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="absolute top-1/2 right-2 -translate-y-1/2 text-blue-400">
+                      <Button variant="ghost" size="icon" className="text-blue-400">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -907,4 +907,5 @@ export default function Home() {
 }
 
     
+
 
