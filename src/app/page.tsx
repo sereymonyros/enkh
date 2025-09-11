@@ -84,7 +84,7 @@ type HistoryItem = {
 
 // Define a constant for the local cache lifetime (1 day in milliseconds).
 const LOCAL_CACHE_STALE_MS =
-  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 864000;
+  parseInt(process.env.NEXT_PUBLIC_LOCAL_CACHE_STALE_MS || '', 10) || 86400000;
 
 const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
@@ -681,29 +681,56 @@ function PageContent() {
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader>
-              <div className='p-2'>
+              <div className="flex items-center justify-center p-2">
                 {authState.state === 'loading' && (
-                    <div className="p-2 text-xs text-muted-foreground text-center">Initializing session...</div>
+                  <div className="p-2 text-xs text-muted-foreground text-center">
+                    Initializing...
+                  </div>
                 )}
-                {authState.state === 'authenticated' && user && (
-                    user.isAnonymous ? (
-                        <Button variant="outline" onClick={signInWithGoogle} className="w-full">
-                            <GoogleIcon className="mr-2 h-4 w-4" />
-                            Sign in with Google
+                {authState.state === 'authenticated' &&
+                  user &&
+                  (user.isAnonymous ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={signInWithGoogle}
+                        >
+                          <GoogleIcon className="h-5 w-5" />
                         </Button>
-                    ) : (
-                        <div className="flex w-full items-center gap-2">
-                           <Avatar className="h-8 w-8">
-                               <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
-                               <AvatarFallback>{user.displayName?.[0] || 'U'}</AvatarFallback>
-                           </Avatar>
-                           <Button variant="outline" size="sm" onClick={signOut} className="flex-1">
-                               <LogOut size={14} className="mr-2"/>
-                               Sign Out
-                           </Button>
-                       </div>
-                    )
-                )}
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Sign in with Google</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <div className="flex w-full items-center justify-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={user.photoURL || ''}
+                          alt={user.displayName || 'User'}
+                        />
+                        <AvatarFallback>
+                          {user.displayName?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={signOut}
+                          >
+                            <LogOut size={16} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>Sign Out</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  ))}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
                 <SidebarMenuItem>
