@@ -39,6 +39,15 @@ import { CacheWarmer } from '@/components/cache-warmer';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useFeedbackStore } from '@/lib/feedback-store';
+import { FeedbackTable } from '@/components/feedback-table';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetClose,
+} from '@/components/ui/sheet';
 
 
 // Define a type for a single history entry
@@ -72,9 +81,10 @@ export default function Home() {
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
 
-
+  
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
 
@@ -514,11 +524,9 @@ export default function Home() {
             <SidebarMenu>
               {feedbackCount > 0 && (
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild variant="ghost" className="justify-center text-blue-400">
-                        <Link href="/feedback">
-                            <List />
-                        </Link>
-                    </SidebarMenuButton>
+                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
+                    <List />
+                  </Button>
                 </SidebarMenuItem>
               )}
             </SidebarMenu>
@@ -534,7 +542,7 @@ export default function Home() {
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-        <div className='relative flex flex-col flex-1'>
+        <div className='relative flex flex-col flex-1'>          
           
         <ScrollArea className="w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar" viewportRef={scrollAreaViewportRef}>
           <div className="flex flex-col gap-6 pb-48 pt-16">
@@ -602,12 +610,21 @@ export default function Home() {
         </div>
         </SidebarInset>
         <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+        <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Feedback Submissions</SheetTitle>
+              <SheetDescription>
+                This list displays all feedback submitted by users and updates in real-time.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="py-4">
+              <FeedbackTable />
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </TooltipProvider>
     </SidebarProvider>
   );
 }
-
-    
-
-    
