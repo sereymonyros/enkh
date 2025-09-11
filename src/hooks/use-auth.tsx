@@ -62,50 +62,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // This effect handles the entire auth lifecycle, including redirect results.
     // It's structured to prevent race conditions on mobile.
 
-    // 1. Check for a redirect result from Google Sign-In first.
-    getRedirectResult(auth)
-      .then((result) => {
+    const processAuth = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
-          // If there's a result, the user has just signed in.
-          // `onAuthStateChanged` will soon fire with this new user,
-          // so we don't need to do anything else here.
+          // If there's a result, the user has just signed in via redirect.
+          // `onAuthStateChanged` will soon fire with this new user.
           toast.success(`Welcome, ${result.user.displayName}!`);
+          // We can set the user state here to be more immediate, though onAuthStateChanged will confirm it.
+          setUser(result.user);
+          setAuthState({ state: 'authenticated', user: result.user });
+          await syncHistory(result.user.uid);
+          return; // Early return to avoid conflicts with the listener below
         }
-      })
-      .catch((error) => {
-        // This catches errors from the redirect process itself.
+      } catch (error) {
         console.error("Google redirect sign-in error:", error);
         toast.error("Sign-in failed", { description: "Could not complete sign-in with Google." });
-      })
-      .finally(() => {
-        // 2. AFTER checking for redirect, set up the main auth state listener.
-        // This is crucial. It ensures we don't prematurely create an anonymous user
-        // before the redirect result is processed.
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-            if (currentUser) {
-                // If a user (Google or anonymous) is found, set the state.
-                setUser(currentUser);
-                setAuthState({ state: 'authenticated', user: currentUser });
-                // Sync history for the user.
-                await syncHistory(currentUser.uid);
-            } else {
-                // If there is NO user at all, it's a fresh session.
-                // We create a new anonymous user. `onAuthStateChanged` will run again.
-                setAuthState({ state: 'loading' }); // Briefly show loading while we create the session
-                try {
-                    await signInAnonymously(auth);
-                } catch (error) {
-                    console.error("Anonymous sign-in failed:", error);
-                    toast.error("Could not start a session. Please refresh the page.");
-                    // In a real app, you might want a more robust error state here.
-                }
+      }
+
+      // If there was no redirect result, we check the current auth state.
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          // If a user (Google or anonymous) is found, set the state.
+          setUser(currentUser);
+          setAuthState({ state: 'authenticated', user: currentUser });
+          if (!currentUser.isAnonymous) {
+            await syncHistory(currentUser.uid);
+          }
+        } else {
+          // If there is NO user at all, it's a fresh session.
+          // We create a new anonymous user. `onAuthStateChanged` will run again.
+          try {
+            await signInAnonymously(auth);
+          } catch (error) {
+            console.error("Anonymous sign-in failed:", error);
+            toast.error("Could not start a session. Please refresh the page.");
+          }
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    const unsubscribePromise = processAuth();
+
+    return () => {
+        unsubscribePromise.then(unsubscribe => {
+            if (unsubscribe) {
+                unsubscribe();
             }
         });
-
-        // The returned function will be called on component unmount to clean up the listener.
-        return () => unsubscribe();
-      });
-  }, [syncHistory]); // The dependency array ensures this runs only once on mount.
+    };
+}, [syncHistory]);
 
 
   const signOut = async () => {
@@ -121,19 +129,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    // Setting state to loading isn't strictly necessary here since the redirect
-    // will navigate the user away, but it can be helpful.
     setAuthState({ state: 'loading' }); 
     try {
-        // Use signInWithRedirect, which is best for all devices, especially mobile.
         await signInWithRedirect(auth, provider);
-        // The result is handled by `getRedirectResult` in the main useEffect hook.
     } catch (error: any) {
         console.error("Google sign-in error:", error);
         toast.error("Google Sign-In Failed", {
             description: error.message || "An unexpected error occurred."
         });
-        // Restore the previous auth state if the redirect fails to initiate.
         if (user) {
             setAuthState({ state: 'authenticated', user });
         }
