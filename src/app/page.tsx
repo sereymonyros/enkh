@@ -730,11 +730,13 @@ function PageContent() {
                     <MessageSquare />
                   </Button>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
-                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsHistoryOpen(true)}>
-                    <History />
-                  </Button>
-                </SidebarMenuItem>
+                 {localHistory.length > 0 && (
+                  <SidebarMenuItem>
+                    <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsHistoryOpen(true)}>
+                      <History />
+                    </Button>
+                  </SidebarMenuItem>
+                 )}
               </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
@@ -854,6 +856,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
