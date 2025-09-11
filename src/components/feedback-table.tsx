@@ -17,7 +17,7 @@ type Feedback = {
   id: string;
   rating: number;
   comment: string;
-  createdAt: Date | Timestamp;
+  createdAt: Date | Timestamp | null;
   status: 'new' | 'viewed' | 'in-progress' | 'fixed';
 };
 
@@ -82,7 +82,7 @@ export function FeedbackTable() {
     };
   }, [addOptimisticFeedback, serverFeedback]);
 
-  const combinedFeedback = useMemo(() => {
+  const combinedFeedback: Feedback[] = useMemo(() => {
     // Filter out optimistic items that have been replaced by server data
     const filteredOptimistic = optimisticFeedback.filter(
         // An optimistic item is kept if there's no server item with the same comment and rating.
@@ -90,7 +90,7 @@ export function FeedbackTable() {
         (of) => !serverFeedback.some(sf => sf.comment === of.comment && sf.rating === of.rating)
     );
 
-    const allFeedback = [...filteredOptimistic, ...serverFeedback];
+    const allFeedback: Feedback[] = [...filteredOptimistic, ...serverFeedback];
 
     // Sort the combined list by date, handling potential nulls
     allFeedback.sort((a, b) => {
@@ -98,8 +98,8 @@ export function FeedbackTable() {
       const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : null;
 
       if (!dateA && !dateB) return 0;
-      if (!dateA) return -1; // Put items without a date first (newest)
-      if (!dateB) return 1;
+      if (!dateA) return 1; // Put items without a date last
+      if (!dateB) return -1;
 
       return dateB.getTime() - dateA.getTime();
     });
@@ -163,16 +163,19 @@ export function FeedbackTable() {
           </TableHeader>
           <TableBody>
             {combinedFeedback.map((feedback) => (
-              <TableRow key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
+              <TableRow key={feedback.id} className={`relative ${feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}`}>
                 <TableCell>
                   <RatingStars rating={feedback.rating} />
                 </TableCell>
                 <TableCell className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</TableCell>
                 <TableCell>
-                  <StatusBadge status={feedback.status} />
+                    {feedback.status !== 'fixed' && <StatusBadge status={feedback.status} />}
                 </TableCell>
                 <TableCell className="text-right text-muted-foreground">
-                  {renderDate(feedback.createdAt)}
+                   {feedback.status !== 'fixed' && renderDate(feedback.createdAt)}
+                   {feedback.status === 'fixed' && (
+                     <StatusBadge status={feedback.status} className="absolute top-0 right-0 rounded-none rounded-bl-lg" />
+                   )}
                 </TableCell>
               </TableRow>
             ))}
