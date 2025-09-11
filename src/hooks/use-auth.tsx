@@ -17,11 +17,13 @@ import {
   GoogleAuthProvider,
   signInWithRedirect,
   getRedirectResult,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
+import { useIsMobile } from './use-mobile';
 
 export type AuthState =
   | { state: 'loading' }
@@ -46,6 +48,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
+  const isMobile = useIsMobile();
 
   const syncHistory = useCallback(async (uid: string) => {
     try {
@@ -131,12 +134,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const provider = new GoogleAuthProvider();
     setAuthState({ state: 'loading' }); 
     try {
-        await signInWithRedirect(auth, provider);
+        if (isMobile) {
+            await signInWithRedirect(auth, provider);
+        } else {
+            const result = await signInWithPopup(auth, provider);
+            setUser(result.user);
+            setAuthState({ state: 'authenticated', user: result.user });
+            toast.success(`Welcome, ${result.user.displayName}!`);
+            await syncHistory(result.user.uid);
+        }
     } catch (error: any) {
         console.error("Google sign-in error:", error);
         toast.error("Google Sign-In Failed", {
             description: error.message || "An unexpected error occurred."
         });
+        // Revert to previous state if sign-in fails
         if (user) {
             setAuthState({ state: 'authenticated', user });
         }
