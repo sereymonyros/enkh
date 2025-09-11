@@ -141,7 +141,7 @@ const InputArea = ({
 
 
 export default function Home() {
-  const [inputText, setInputText] = useState('Hello');
+  const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const [isShaking, setIsShaking] = useState(false);
@@ -232,7 +232,7 @@ export default function Home() {
     setIsLoading(true);
     translationRequestRef.current.isCancelled = false;
     if (!isEditing) {
-        setInputText('Hello');
+        setInputText('');
     }
   
     // If it's a new message, add the user message to history.
