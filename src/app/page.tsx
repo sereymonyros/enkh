@@ -93,7 +93,7 @@ const InputArea = ({
 }: InputAreaProps) => (
   <div
     className={cn(
-      'w-full max-w-3xl mx-auto px-4 py-4 flex flex-col items-center gap-3 pointer-events-auto',
+      'relative w-full max-w-3xl mx-auto px-4 py-4 flex flex-col items-center gap-3 pointer-events-auto',
       isShaking ? 'animate-shake' : ''
     )}
   >
@@ -114,13 +114,7 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-      <Image 
-        src="/airport.png" 
-        alt="Airport" 
-        width={100} 
-        height={100} 
-        className="absolute bottom-[-40px] left-8 w-24 h-auto transform -rotate-12"
-      />
+       <div className="absolute bottom-[-10px] left-12 w-4 h-4 bg-blue-400 transform -rotate-45"></div>
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
@@ -687,5 +681,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
