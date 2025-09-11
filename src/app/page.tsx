@@ -668,7 +668,6 @@ function PageContent() {
     }
   };
 
-  // This check must happen after all other hooks are called.
   if (authState.state === 'loading') {
     return (
       <div style={{

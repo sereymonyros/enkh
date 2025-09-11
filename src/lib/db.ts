@@ -148,13 +148,43 @@ export async function mergeFirestoreHistory(userId: string, firestoreHistory: an
     const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
     const store = tx.objectStore(HISTORY_STORE_NAME);
     const firestoreIdIndex = store.index('by-firestore-id');
-    
+    const userIndex = store.index('by-user');
+
     for (const item of firestoreHistory) {
         if (!item.id) continue; // Skip items without a firestore ID
-        // Check if an item with this Firestore ID already exists locally.
-        const existing = await firestoreIdIndex.get(item.id);
-        if (!existing) {
-            // If it doesn't exist, add it to the local store.
+
+        // 1. Check if a record with this Firestore ID already exists.
+        const existingById = await firestoreIdIndex.get(item.id);
+        if (existingById) {
+            continue; // Record already exists and is synced, do nothing.
+        }
+
+        // 2. If not found, check for a "pending" local record that matches the content.
+        // This handles the case where a local record was created but not yet synced.
+        const firestoreDate = new Date(item.createdAt);
+        let potentialMatches = await userIndex.getAll(userId);
+        let matchFound = false;
+
+        for (const localItem of potentialMatches) {
+            // A "pending" record has no firestoreId.
+            if (!localItem.firestoreId &&
+                localItem.originalText === item.originalText &&
+                localItem.translatedText === item.translatedText &&
+                // Check if the creation times are very close (e.g., within 5 seconds)
+                Math.abs(localItem.createdAt.getTime() - firestoreDate.getTime()) < 5000
+            ) {
+                // Found a matching local record. Update it with the Firestore ID.
+                localItem.firestoreId = item.id;
+                // It's good practice to use the server's timestamp as the source of truth.
+                localItem.createdAt = firestoreDate; 
+                await store.put(localItem);
+                matchFound = true;
+                break; // Stop searching once a match is found and updated.
+            }
+        }
+        
+        // 3. If no match was found by ID or by content, add it as a new record.
+        if (!matchFound) {
             await store.add({
                 userId: userId,
                 firestoreId: item.id,
@@ -162,7 +192,7 @@ export async function mergeFirestoreHistory(userId: string, firestoreHistory: an
                 translatedText: item.translatedText,
                 sourceLanguage: item.sourceLanguage,
                 targetLanguage: item.targetLanguage,
-                createdAt: new Date(item.createdAt), // Convert from milliseconds
+                createdAt: firestoreDate,
             });
         }
     }
@@ -176,7 +206,10 @@ export async function updateHistoryItemWithFirestoreId(localId: number, firestor
     const db = await getDb();
     const item = await db.get(HISTORY_STORE_NAME, localId);
     if (item) {
-        item.firestoreId = firestoreId;
-        await db.put(HISTORY_STORE_NAME, item);
+        // Avoid overwriting if another process (like merge) already set the ID.
+        if (!item.firestoreId) {
+            item.firestoreId = firestoreId;
+            await db.put(HISTORY_STORE_NAME, item);
+        }
     }
 }
