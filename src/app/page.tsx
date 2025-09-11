@@ -98,7 +98,7 @@ const InputArea = ({
   >
     <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
       <Textarea
-        placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
+        placeholder="សរសេរ..."
         className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
@@ -686,4 +686,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
 
