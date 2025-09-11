@@ -495,7 +495,7 @@ export default function Home() {
           <SidebarContent>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild variant="ghost" className="justify-center text-blue-400">
                         <Link href="/feedback">
                             <List />
                         </Link>
