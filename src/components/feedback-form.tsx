@@ -106,17 +106,7 @@ export function FeedbackForm({ isOpen, onClose }: FeedbackFormProps) {
           <SheetTitle className="sr-only">Feedback Form</SheetTitle>
 
           {/* Custom Controls Container */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between">
-            {/* Custom Close Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-blue-400"
-              onClick={handleClose}
-            >
-              <X size={20} />
-              <span className="sr-only">Close</span>
-            </Button>
+          <div className="absolute top-0 left-0 right-0 flex items-center justify-end">
             {/* Submit Button */}
             <Button onClick={handleSubmit} variant="ghost" size="icon" className="h-8 w-8 text-blue-400" disabled={isSubmitting}>
               <Send size={20}/>
