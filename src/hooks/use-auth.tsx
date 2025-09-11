@@ -15,7 +15,6 @@ import {
   signOut as firebaseSignOut,
   User,
   GoogleAuthProvider,
-  signInWithPopup,
   getRedirectResult,
   signInWithRedirect,
 } from 'firebase/auth';
@@ -23,7 +22,6 @@ import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { getHistory } from '@/ai/flows/get-history';
 import { mergeFirestoreHistory } from '@/lib/db';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 export type AuthState =
   | { state: 'loading' }
@@ -48,7 +46,6 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
-  const isMobile = useIsMobile();
 
   const syncHistory = useCallback(async (uid: string) => {
     // Only attempt to sync history if the user is online.
@@ -69,7 +66,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // This effect runs once on initial load to handle the redirect result.
+    // This effect runs once on initial load to handle the redirect result
+    // and set up the auth state listener.
     getRedirectResult(auth)
       .then(async (result) => {
         if (result) {
