@@ -207,6 +207,7 @@ function PageContent() {
   const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -573,6 +574,7 @@ function PageContent() {
     };
     setTranslationHistory(prev => [...prev, userMessage, aiMessage]);
     setOpenMobile(false);
+    setIsHistoryOpen(false);
   };
 
   const renderHistoryItem = (item: HistoryItem, index: number) => {
@@ -684,20 +686,20 @@ function PageContent() {
     }
   };
 
-  // FIX: This conditional return causes the hook order to change.
-  // It must be moved after all other hook calls.
   if (authState.state === 'loading') {
     return (
-      <div style={{
+      <div
+        style={{
           position: 'fixed',
           inset: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'hsl(var(--background))',
-          color: 'hsl(var(--foreground))'
-      }}>
-          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+          color: 'hsl(var(--foreground))',
+        }}
+      >
+        <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
       </div>
     );
   }
@@ -747,37 +749,14 @@ function PageContent() {
                     <MessageSquare />
                   </Button>
                 </SidebarMenuItem>
+                 <SidebarMenuItem>
+                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsHistoryOpen(true)}>
+                    <History />
+                  </Button>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
-            <SidebarContent className="justify-start items-center">
-                <SidebarGroup className="p-0">
-                    <SidebarGroupLabel className="flex items-center gap-2">
-                        <History size={16} />
-                        <span>Recent History</span>
-                    </SidebarGroupLabel>
-                    <SidebarSeparator className="my-1"/>
-                    <ScrollArea className="h-full w-full">
-                        <div className="flex flex-col gap-2 p-2">
-                        {localHistory.length === 0 ? (
-                            <p className="text-xs text-muted-foreground p-2 text-center">No history yet.</p>
-                        ) : (
-                            localHistory.map((item) => (
-                                <button 
-                                    key={item.id}
-                                    className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
-                                    onClick={() => handleHistoryItemClick(item)}
-                                >
-                                    <p className="font-semibold truncate">{item.originalText}</p>
-                                    <p className="text-sm text-muted-foreground truncate">{item.translatedText}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {formatDistanceToNow(item.createdAt, { addSuffix: true })}
-                                    </p>
-                                </button>
-                            ))
-                        )}
-                        </div>
-                    </ScrollArea>
-                </SidebarGroup>
+            <SidebarContent>
             </SidebarContent>
              <SidebarFooter>
              </SidebarFooter>
@@ -852,6 +831,37 @@ setIsFeedbackOpen(false);
             </div>
           </SheetContent>
         </Sheet>
+         <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+          <SheetContent side="left" className="w-[80%] sm:max-w-xs overflow-y-auto flex flex-col p-0" hideCloseButton={true}>
+            <SheetHeader className="p-4 border-b">
+                <SheetTitle className="flex items-center gap-2">
+                    <History size={18} />
+                    Recent History
+                </SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-full w-full">
+                <div className="flex flex-col gap-1 p-2">
+                {localHistory.length === 0 ? (
+                    <p className="text-xs text-muted-foreground p-2 text-center">No history yet.</p>
+                ) : (
+                    localHistory.map((item) => (
+                        <button 
+                            key={item.id}
+                            className="w-full text-left p-2 rounded-md hover:bg-accent transition-colors"
+                            onClick={() => handleHistoryItemClick(item)}
+                        >
+                            <p className="font-semibold truncate">{item.originalText}</p>
+                            <p className="text-sm text-muted-foreground truncate">{item.translatedText}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+                            </p>
+                        </button>
+                    ))
+                )}
+                </div>
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
       </div>
   );
 }
@@ -866,5 +876,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
