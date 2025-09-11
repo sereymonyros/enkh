@@ -127,17 +127,17 @@ export function FeedbackTable() {
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
             <Card key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
-                <CardHeader className="p-4">
-                    <div className="flex justify-between items-start gap-4">
-                        <RatingStars rating={feedback.rating} />
-                        <div className="block text-right text-xs text-muted-foreground space-y-1">
-                            <span>{renderDate(feedback.createdAt)}</span>
-                            <div><StatusBadge status={feedback.status} /></div>
-                        </div>
+                <CardHeader className="p-4 flex flex-row items-start justify-end text-right">
+                    <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">{renderDate(feedback.createdAt)}</div>
+                        <StatusBadge status={feedback.status} />
                     </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
-                    <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                    <div className="space-y-2">
+                        <RatingStars rating={feedback.rating} />
+                        <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                    </div>
                 </CardContent>
             </Card>
         ))}
