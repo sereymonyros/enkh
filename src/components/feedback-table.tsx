@@ -130,7 +130,7 @@ export function FeedbackTable() {
                 <CardHeader className="p-4">
                     <div className="flex justify-between items-start gap-4">
                         <RatingStars rating={feedback.rating} />
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="block text-right text-xs text-muted-foreground space-y-1">
                             <span>{renderDate(feedback.createdAt)}</span>
                             <StatusBadge status={feedback.status} />
                         </div>
