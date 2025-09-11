@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, Phone, KeyRound, History, AlertCircle } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -93,20 +93,16 @@ const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) 
   if (isLoading) {
     return (
       <div className="text-center text-muted-foreground animate-pulse p-2">
-        Signing in...
+        Initializing session...
       </div>
     );
   }
 
-  if (user && user.phoneNumber) {
-    return (
+  return (
       <div className="text-center text-lg font-semibold p-2">
-        Hello, {user.phoneNumber}
+        Welcome to Enkh
       </div>
     );
-  }
-
-  return null;
 };
 
 
@@ -184,86 +180,6 @@ const InputArea = ({
   </div>
 );
 
-function AuthArea() {
-    const { signInWithPhone, verifyOtp, authState } = useAuth();
-    const [phone, setPhone] = useState('');
-    const [otp, setOtp] = useState('');
-    const [isSending, setIsSending] = useState(false);
-    
-    const handleSendCode = async () => {
-        if (!phone) {
-            toast.error("Please enter a phone number.");
-            return;
-        }
-        setIsSending(true);
-        try {
-            await signInWithPhone(phone);
-            toast.success("Verification code sent!");
-        } catch (error: any) {
-            console.error("Failed to send code:", error);
-            toast.error("Failed to send code", { description: error.message });
-        } finally {
-            setIsSending(false);
-        }
-    };
-
-    const handleVerifyCode = async () => {
-        if (!otp) {
-            toast.error("Please enter the verification code.");
-            return;
-        }
-        try {
-            await verifyOtp(otp);
-            toast.success("Successfully signed in!");
-        } catch (error: any) {
-            console.error("Failed to verify code:", error);
-            toast.error("Sign in failed", { description: error.message });
-        }
-    };
-    
-    if (authState.state === 'loading') {
-      return <div className="text-center text-muted-foreground animate-pulse p-4">Initializing...</div>
-    }
-
-    return (
-        <div className="w-full max-w-sm space-y-4 p-4 pointer-events-auto">
-            <div id="recaptcha-container"></div>
-            {authState.state !== 'otp_sent' ? (
-                <div className="flex items-center space-x-2">
-                    <div className="relative flex-1">
-                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            type="tel"
-                            placeholder="Phone number (+1...)"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                    <Button onClick={handleSendCode} disabled={isSending}>
-                        {isSending ? "Sending..." : "Send Code"}
-                    </Button>
-                </div>
-            ) : (
-                <div className="flex items-center space-x-2">
-                    <div className="relative flex-1">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            type="text"
-                            placeholder="6-digit code"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                    <Button onClick={handleVerifyCode} disabled={authState.state === 'verifying_otp'}>
-                        {authState.state === 'verifying_otp' ? "Verifying..." : "Verify"}
-                    </Button>
-                </div>
-            )}
-        </div>
-    );
-}
 
 function PageContent() {
   const [inputText, setInputText] = useState('');
@@ -281,7 +197,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, syncHistory } = useAuth();
+  const { user, signOut, authState } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -323,9 +239,7 @@ function PageContent() {
 
   useEffect(() => {
     // When the user changes (e.g., on login/logout), refetch the history.
-    // The syncHistory function in useAuth already handles fetching from the cloud,
-    // so this just updates the UI from the local DB.
-    if(user && !user.isAnonymous) {
+    if(user) {
       fetchHistory();
     }
   }, [user, fetchHistory]);
@@ -740,8 +654,6 @@ function PageContent() {
     }
   };
 
-  const showInputArea = authState.state === 'authenticated' && !user?.isAnonymous;
-
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <CacheWarmer />
@@ -772,28 +684,6 @@ function PageContent() {
                     <MessageSquare />
                   </Button>
                 </SidebarMenuItem>
-                 <SidebarMenuItem>
-                   {user && !user.isAnonymous ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="p-0 rounded-full h-8 w-8">
-                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.photoURL || ''} alt={user.phoneNumber || 'U'} />
-                                <AvatarFallback>{user.phoneNumber?.substring(0, 2) || 'U'}</AvatarFallback>
-                               </Avatar>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{user.phoneNumber || 'My Account'}</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={signOut} className="text-red-500">
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : null}
-                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarHeader>
             <SidebarContent className="justify-start items-center">
@@ -834,7 +724,7 @@ function PageContent() {
         <ScrollArea 
             className={cn(
                 "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
-                (hasStarted || showInputArea) ? "opacity-100" : "opacity-0"
+                (hasStarted || authState.state === 'authenticated') ? "opacity-100" : "opacity-0"
             )} 
             viewportRef={scrollAreaViewportRef}
         >
@@ -851,26 +741,20 @@ function PageContent() {
 
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            (hasStarted || showInputArea) ? "bottom-0" : "top-1/2 -translate-y-1/2",
-            !(hasStarted || showInputArea) && "flex items-center justify-center"
+            (hasStarted || authState.state === 'authenticated') ? "bottom-0" : "top-1/2 -translate-y-1/2",
+            !(hasStarted || authState.state === 'authenticated') && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                {showInputArea ? (
-                  <>
-                    <WelcomeMessage user={user} isLoading={false} />
-                    <InputArea
-                      inputText={inputText}
-                      setInputText={setInputText}
-                      isLoading={isLoading}
-                      isEditing={editingItemId !== null}
-                      isShaking={isShaking}
-                      onTranslate={() => handleTranslate(inputText)}
-                      onCancel={handleCancel}
-                    />
-                  </>
-                ) : (
-                   <AuthArea />
-                )}
+                <WelcomeMessage user={user} isLoading={authState.state === 'loading'} />
+                <InputArea
+                    inputText={inputText}
+                    setInputText={setInputText}
+                    isLoading={isLoading}
+                    isEditing={editingItemId !== null}
+                    isShaking={isShaking}
+                    onTranslate={() => handleTranslate(inputText)}
+                    onCancel={handleCancel}
+                />
             </div>
         </div>
         
@@ -917,6 +801,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
