@@ -132,7 +132,7 @@ export function FeedbackTable() {
                         <RatingStars rating={feedback.rating} />
                         <div className="block text-right text-xs text-muted-foreground space-y-1">
                             <span>{renderDate(feedback.createdAt)}</span>
-                            <StatusBadge status={feedback.status} />
+                            <div><StatusBadge status={feedback.status} /></div>
                         </div>
                     </div>
                 </CardHeader>
