@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -16,6 +15,8 @@ import {
   User,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect, // <-- Import signInWithRedirect
+  getRedirectResult, // <-- Import getRedirectResult
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -47,7 +48,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(); // Your custom hook to detect mobile
 
   const syncHistory = useCallback(async (uid: string) => {
     // Only attempt to sync history if the user is online.
@@ -66,6 +67,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("History sync failed:", error);
     }
   }, []);
+
+
+  // --- NEW useEffect for handling redirect results ---
+  useEffect(() => {
+    // This effect runs only once on component mount to check for redirect results
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          // User was successfully signed in via redirect
+          toast.success(`Welcome back, ${result.user.displayName}!`);
+          await syncHistory(result.user.uid);
+          // onAuthStateChanged listener will pick this up
+        }
+      } catch (error: any) {
+        console.error("Google sign-in redirect error:", error);
+        // Handle the 'auth/popup-closed-by-user' for redirects too if needed,
+        // though it's less common to explicitly get that on redirect completion.
+        // It's more likely for other network or auth errors.
+        toast.error("Google Sign-In Failed (Redirect)", {
+          description: error.message || "An unexpected error occurred during redirect."
+        });
+      } finally {
+        // Ensure state is updated after trying to handle redirect
+        // The onAuthStateChanged listener will ultimately set the user/authState
+      }
+    };
+
+    handleRedirect();
+  }, [syncHistory]); // Dependency array includes syncHistory
+
 
   useEffect(() => {
     // This listener handles all auth state changes.
@@ -95,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     return () => unsubscribe(); // Cleanup the listener on unmount.
-  }, []);
+  }, []); // Empty dependency array, runs once on mount
 
 
   const signOut = async () => {
@@ -105,7 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       await firebaseSignOut(auth);
       // onAuthStateChanged will handle creating a new anonymous user automatically.
-      
+
       if (!wasAnonymous) {
         toast.success('You have been signed out.');
       }
@@ -119,21 +151,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use signInWithPopup which is better for development and avoids redirect issues.
-      const result = await signInWithPopup(auth, provider);
-      if (result && result.user) {
-        toast.success(`Welcome, ${result.user.displayName}!`);
-        // Sync history immediately after a successful sign-in.
-        await syncHistory(result.user.uid);
+      if (isMobile) {
+        // For mobile, use redirect
+        await signInWithRedirect(auth, provider);
+        // signInWithRedirect does NOT return a result here. The page will redirect.
+        // The result will be handled by the getRedirectResult in the useEffect on page reload.
+      } else {
+        // For desktop, use popup
+        const result = await signInWithPopup(auth, provider);
+        if (result && result.user) {
+          toast.success(`Welcome, ${result.user.displayName}!`);
+          await syncHistory(result.user.uid);
+        }
       }
     } catch (error: any) {
       console.error("Google sign-in error:", error);
-      toast.error("Google Sign-In Failed", {
-        description: error.message || "An unexpected error occurred."
-      });
+
+      // Handle specific pop-up closed error for desktop
+      if (error.code === 'auth/popup-closed-by-user' && !isMobile) {
+        toast.info("Google sign-in cancelled. You closed the pop-up.", {
+          description: "Please try again if you wish to sign in with Google."
+        });
+      } else {
+        // Generic error for others, or redirect-specific errors if caught here
+        toast.error("Google Sign-In Failed", {
+          description: error.message || "An unexpected error occurred."
+        });
+      }
     }
   };
-  
+
   const value = {
     user,
     authState,
