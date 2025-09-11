@@ -183,6 +183,7 @@ export default function Home() {
   }, [setServerFeedback]);
 
   useEffect(() => {
+    // The timeout ensures that the DOM has updated before we try to scroll
     setTimeout(() => {
       scrollToBottom();
     }, 0);
@@ -685,4 +686,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
