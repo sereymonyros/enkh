@@ -189,13 +189,7 @@ function AuthArea() {
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [isSending, setIsSending] = useState(false);
-    const [hostname, setHostname] = useState('');
-
-    useEffect(() => {
-        // This code runs only in the browser, safely accessing `window`.
-        setHostname(window.location.hostname);
-    }, []);
-
+    
     const handleSendCode = async () => {
         if (!phone) {
             toast.error("Please enter a phone number.");
@@ -233,19 +227,7 @@ function AuthArea() {
 
     return (
         <div className="w-full max-w-sm space-y-4 p-4 pointer-events-auto">
-            {hostname && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Configuration Needed</AlertTitle>
-                    <AlertDescription>
-                        To enable sign-in, add the following hostname to your Firebase project's "Authorized domains" list:
-                        <div className="font-mono bg-muted p-2 rounded-md my-2 text-center break-all">
-                            {hostname}
-                        </div>
-                    </AlertDescription>
-                </Alert>
-            )}
-             <div id="recaptcha-container"></div>
+            <div id="recaptcha-container"></div>
             {authState.state !== 'otp_sent' ? (
                 <div className="flex items-center space-x-2">
                     <div className="relative flex-1">
@@ -935,5 +917,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
