@@ -265,6 +265,21 @@ function PageContent() {
     }, 0);
   }, [translationHistory, isLoading]);
 
+  if (authState.state === 'loading') {
+    return (
+      <div style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'hsl(var(--background))',
+          color: 'hsl(var(--foreground))'
+      }}>
+          <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
+      </div>
+    );
+  }
 
   const handleCancel = () => {
     console.log('User cancelled translation.');
@@ -667,13 +682,6 @@ function PageContent() {
     }
   };
 
-  if (authState.state === 'loading') {
-    return (
-        <div className="fixed inset-0 flex items-center justify-center bg-background">
-            <LoaderCircle className="h-12 w-12 animate-spin text-blue-400" />
-        </div>
-    );
-  }
 
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
@@ -839,5 +847,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    

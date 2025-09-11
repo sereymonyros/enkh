@@ -1,19 +1,25 @@
 
+'use client';
+
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster as SonnerToaster } from 'sonner';
 import { Providers } from "@/components/providers";
+import { useAuth } from "@/hooks/use-auth";
+import { LoaderCircle } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "enkh",
-  description: "Translate text between English and Khmer",
-};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  // The metadata is still here for static analysis, but the main layout is now a client component.
+  // const metadata: Metadata = {
+  //   title: "enkh",
+  //   description: "Translate text between English and Khmer",
+  // };
 
   return (
     <html lang="en" suppressHydrationWarning>
