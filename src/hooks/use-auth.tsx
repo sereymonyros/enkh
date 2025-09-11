@@ -65,30 +65,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // This is the core listener for all auth changes.
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser); // Always set the user, even if null
-      setAuthState({ state: 'authenticated', user: currentUser });
+    // This effect runs once on mount to correctly initialize auth
+    
+    // Flag to ensure we don't accidentally trigger anonymous sign-in
+    // while a redirect is being processed.
+    let isProcessingRedirect = true;
 
-      if (currentUser && !currentUser.isAnonymous) {
-        // If a real user is logged in, sync their history.
-        await syncHistory(currentUser.uid);
-      }
-    });
-
-    // Handle the redirect result on initial load.
+    // 1. First, check for the result of a redirect sign-in.
     getRedirectResult(auth)
       .then(async (result) => {
         if (result) {
           // User has just signed in via redirect.
           toast.success(`Welcome, ${result.user.displayName}!`);
-          // History sync will be triggered by onAuthStateChanged.
-        } else if (!auth.currentUser) {
-          // No redirect result and no current user, so sign in anonymously.
-          // This only runs on the very first visit.
-          signInAnonymously(auth).catch((error) => {
-            console.error("Anonymous sign-in failed on initial load:", error);
-          });
+          // The onAuthStateChanged listener below will handle setting the user and syncing history.
         }
       })
       .catch((error) => {
@@ -96,8 +85,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
         toast.error("Sign-In Failed", {
           description: "There was a problem during sign-in. Please try again."
         });
+      })
+      .finally(() => {
+        isProcessingRedirect = false;
       });
 
+    // 2. Second, set up the listener for all subsequent auth state changes.
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      // This is the single source of truth for the user object.
+      setUser(currentUser);
+      setAuthState({ state: 'authenticated', user: currentUser });
+
+      if (currentUser) {
+        // If a real user is logged in, sync their history.
+        if (!currentUser.isAnonymous) {
+          await syncHistory(currentUser.uid);
+        }
+      } else {
+        // If there's no user, and we are not in the middle of processing a redirect,
+        // then it's safe to sign in an anonymous user.
+        if (!isProcessingRedirect) {
+          signInAnonymously(auth).catch((error) => {
+            console.error("Anonymous sign-in failed:", error);
+          });
+        }
+      }
+    });
+
+    // Cleanup the listener on component unmount.
     return () => unsubscribe();
   }, [syncHistory]);
 
@@ -105,8 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // After sign-out, onAuthStateChanged will fire. We then sign in a new anonymous user.
-      await signInAnonymously(auth);
+      // onAuthStateChanged will handle the rest, including creating a new anonymous session.
       toast.success('You have been signed out.');
     } catch (error: any) {
       console.error('Sign-out failed:', error);
@@ -117,7 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // Use redirect for maximum compatibility across all browsers and devices.
+      // Always use redirect for the most reliable cross-device and cross-context experience.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
