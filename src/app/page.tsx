@@ -152,7 +152,6 @@ export default function Home() {
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
-  const isMobile = useIsMobile();
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -590,7 +589,7 @@ export default function Home() {
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader className="justify-center items-center">
-              <SidebarMenu className="gap-1.5">
+              <SidebarMenu className="gap-2">
                 <SidebarMenuItem>
                   <ThemeToggle />
                 </SidebarMenuItem>
@@ -680,7 +679,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-
-
-
