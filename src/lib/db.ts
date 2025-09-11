@@ -126,17 +126,32 @@ export async function addHistoryItem(item: Omit<HistoryEntry, 'id' | 'createdAt'
 
 
 /**
- * Retrieves the translation history for a specific user, sorted from newest to oldest.
+ * Retrieves a de-duplicated list of translation history for a specific user.
+ * If multiple entries for the same original text exist, only the most recent one is returned.
  * @param userId The UID of the user.
- * @returns An array of history entries.
+ * @returns A de-duplicated array of history entries, sorted from newest to oldest.
  */
 export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]> {
     const db = await getDb();
-    const items = await db.getAllFromIndex(HISTORY_STORE_NAME, 'by-user', userId);
-    // The items are not guaranteed to be sorted by date from the index,
-    // so we sort them here explicitly in descending order (newest first).
-    return items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const allItems = await db.getAllFromIndex(HISTORY_STORE_NAME, 'by-user', userId);
+
+    // Sort all items by date, newest first.
+    const sortedItems = allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // De-duplicate the items, keeping only the most recent for each originalText.
+    const uniqueItems = new Map<string, HistoryEntry>();
+    for (const item of sortedItems) {
+        const normalizedOriginalText = item.originalText.toLowerCase().trim();
+        if (!uniqueItems.has(normalizedOriginalText)) {
+            uniqueItems.set(normalizedOriginalText, item);
+        }
+    }
+
+    // The map now holds the most recent unique entries. Convert it back to an array
+    // and sort it one last time to ensure the final order is correct.
+    return Array.from(uniqueItems.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
+
 
 /**
  * Merges history from Firestore into the local IndexedDB, avoiding duplicates.
