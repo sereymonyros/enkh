@@ -495,10 +495,9 @@ export default function Home() {
           <SidebarContent>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild tooltip="Feedback List">
                         <Link href="/feedback">
                             <List />
-                            Feedback List
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -588,3 +587,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
