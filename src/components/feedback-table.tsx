@@ -55,7 +55,7 @@ const RatingStars = ({ rating }: { rating: number }) => {
     )
 }
 
-const renderDate = (createdAt: Date | Timestamp) => {
+const renderDate = (createdAt: Date | Timestamp | null) => {
     if (!createdAt) return '-';
     const date = isTimestamp(createdAt) ? createdAt.toDate() : createdAt;
     return formatDistanceToNow(date, { addSuffix: true });
@@ -97,6 +97,7 @@ export function FeedbackTable() {
       const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : null;
       const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : null;
 
+      if (!dateA && !dateB) return 0;
       if (!dateA) return -1; // Put items without a date first (newest)
       if (!dateB) return 1;
 
@@ -130,7 +131,7 @@ export function FeedbackTable() {
       {/* Mobile View: Card Layout */}
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
-            <Card key={feedback.id} className={`relative ${feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}`}>
+            <Card key={feedback.id} className={`relative overflow-hidden ${feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}`}>
                 <CardHeader className="p-4 flex flex-row items-start justify-between">
                     <div className="space-y-2">
                         <RatingStars rating={feedback.rating} />
@@ -138,7 +139,7 @@ export function FeedbackTable() {
                     </div>
                 </CardHeader>
                  {feedback.status === 'fixed' ? (
-                  <StatusBadge status={feedback.status} className="absolute top-2 right-2" />
+                  <StatusBadge status={feedback.status} className="absolute top-0 right-0 rounded-none rounded-bl-lg" />
                 ) : (
                     <div className="absolute bottom-2 right-2 text-right text-xs text-muted-foreground space-y-1">
                         <div>{renderDate(feedback.createdAt)}</div>
