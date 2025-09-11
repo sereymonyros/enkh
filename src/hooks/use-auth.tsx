@@ -44,35 +44,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Sign in anonymously on initial load
   const signInAnonymouslyOnce = useCallback(async () => {
     try {
+      // Only attempt anonymous sign-in if there's no user.
+      if (auth.currentUser) return;
       await signInAnonymously(auth);
       console.log('Signed in anonymously');
     } catch (error) {
       console.error('Anonymous sign-in failed:', error);
-      toast.error('Could not start a session. Some features might be unavailable.');
+      // Don't toast an error here, as it might be expected if not enabled.
+      // The app will just proceed without an anonymous user.
     }
   }, []);
 
   useEffect(() => {
+    // This flag helps prevent race conditions
+    let isMounted = true;
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+       if (!isMounted) return;
+
       if (currentUser) {
         setUser(currentUser);
-      } else {
-        // If no user, sign in anonymously
-        await signInAnonymouslyOnce();
-      }
-      setAuthLoading(false);
-    });
-    
-    // Handle the redirect result from Google Sign-In
-    getRedirectResult(auth).catch(error => {
-        console.error("Error getting redirect result:", error);
-        toast.error("Failed to sign in with Google. Please try again.");
         setAuthLoading(false);
+      } else {
+        // If no user, try to sign in anonymously.
+        await signInAnonymouslyOnce();
+        // The user state will be updated by the next onAuthStateChanged event if successful.
+        // If it fails, we still stop loading and proceed without a user.
+        setAuthLoading(false);
+      }
     });
 
+    // Handle the redirect result from Google Sign-In
+    getRedirectResult(auth)
+      .catch(error => {
+        console.error("Error getting redirect result:", error);
+        toast.error("Failed to sign in with Google. Please try again.");
+      })
+      .finally(() => {
+         if (isMounted) setAuthLoading(false);
+      });
+
     // Cleanup subscription on unmount
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [signInAnonymouslyOnce]);
+
 
   // Function to sign in with Google using redirect
   const signInWithGoogle = async () => {
@@ -92,7 +110,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await firebaseSignOut(auth);
       // The onAuthStateChanged listener will handle setting user to null
-      // and then trigger anonymous sign-in
+      // and then trigger anonymous sign-in again.
+      setUser(null);
     } catch (error) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
