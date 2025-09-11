@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,7 +15,8 @@ import {
   signOut as firebaseSignOut,
   User,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -93,16 +95,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const provider = new GoogleAuthProvider();
     setAuthState({ state: 'loading' });
     try {
-        await signInWithPopup(auth, provider);
-        // onAuthStateChanged will handle the user state update and history sync
-        toast.success("Successfully signed in with Google!");
+        // Use signInWithRedirect which is more mobile-friendly
+        await signInWithRedirect(auth, provider);
+        // The result is handled by onAuthStateChanged after the redirect returns
     } catch (error: any) {
         console.error("Google sign-in error:", error);
         toast.error("Google Sign-In Failed", {
             description: error.message || "An unexpected error occurred."
         });
         // If sign-in fails, the user remains in their previous state (likely anonymous)
-        // onAuthStateChanged will ensure the UI reflects the actual user state.
         if (user) {
             setAuthState({ state: 'authenticated', user });
         }
