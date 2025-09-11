@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, LogIn, History } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
+import { saveHistory } from '@/ai/flows/save-history';
 import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
@@ -372,6 +373,7 @@ function PageContent() {
       }
   
       if (user) {
+        // First, save to the local-first IndexedDB cache.
         await addHistoryItem({
             userId: user.uid,
             originalText: trimmedInput,
@@ -379,7 +381,21 @@ function PageContent() {
             sourceLanguage: sourceLang,
             targetLanguage: targetLang,
         });
+        // Then, refresh the history displayed in the UI from the local DB.
         await fetchHistory();
+        
+        // After, sync to the cloud in the background (fire and forget).
+        saveHistory({
+            userId: user.uid,
+            originalText: trimmedInput,
+            translatedText: translatedText,
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+        }).catch(err => {
+            // Log sync errors but don't block the user.
+            // The user's data is safe locally.
+            console.error("Failed to sync history to cloud:", err);
+        });
       }
 
       const aiMessage: HistoryItem = {
