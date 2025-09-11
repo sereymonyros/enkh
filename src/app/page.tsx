@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
@@ -113,7 +114,13 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-      <div className="absolute bottom-[-8px] left-12 w-4 h-4 bg-background/50 border-r-2 border-b-2 border-blue-400 transform -rotate-45" style={{clipPath: 'polygon(100% 0, 0 100%, 100% 100%)'}}/>
+      <Image 
+        src="/airport.png" 
+        alt="Airport" 
+        width={100} 
+        height={100} 
+        className="absolute bottom-[-40px] left-8 w-24 h-auto transform -rotate-12"
+      />
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
@@ -680,3 +687,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
