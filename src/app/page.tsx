@@ -31,6 +31,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarMenuButton,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { WelcomeToast } from '@/components/welcome-toast';
@@ -145,8 +146,7 @@ const InputArea = ({
   </div>
 );
 
-
-export default function Home() {
+function PageContent() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
@@ -161,6 +161,7 @@ export default function Home() {
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
+  const { setOpenMobile } = useSidebar();
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -580,8 +581,6 @@ export default function Home() {
 
 
   return (
-    <SidebarProvider defaultOpen={false}>
-    <TooltipProvider>
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         {/* <WelcomeToast historyLength={translationHistory.length} /> */}
         <CacheWarmer />
@@ -671,6 +670,7 @@ export default function Home() {
           isOpen={isFeedbackOpen}
           onClose={() => setIsFeedbackOpen(false)}
           onFeedbackSubmitted={() => {
+            setOpenMobile(false);
             setIsFeedbackOpen(false);
             setIsFeedbackListOpen(true);
           }}
@@ -689,7 +689,16 @@ export default function Home() {
           </SheetContent>
         </Sheet>
       </div>
-    </TooltipProvider>
+  );
+}
+
+
+export default function Home() {
+  return (
+    <SidebarProvider defaultOpen={false}>
+      <TooltipProvider>
+        <PageContent />
+      </TooltipProvider>
     </SidebarProvider>
   );
 }
@@ -699,6 +708,8 @@ export default function Home() {
     
 
 
+
+    
 
     
 
