@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -196,6 +197,7 @@ function PageContent() {
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const [isShaking, setIsShaking] = useState(false);
   const [videoFinished, setVideoFinished] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
@@ -204,7 +206,7 @@ function PageContent() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
-  const [hasStarted, setHasStarted] = useState(false);
+  
   const { setOpenMobile } = useSidebar();
   const { user, signOut, authState, signInWithGoogle } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
@@ -291,11 +293,11 @@ function PageContent() {
       }
       return;
     }
-
+  
     if (!hasStarted) {
         setHasStarted(true);
     }
-  
+
     setIsLoading(true);
     translationRequestRef.current.isCancelled = false;
     if (!isEditing) {
@@ -766,7 +768,7 @@ function PageContent() {
         <ScrollArea 
             className={cn(
                 "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
-                (hasStarted || authState.state === 'authenticated') ? "opacity-100" : "opacity-0"
+                hasStarted ? "opacity-100" : "opacity-0"
             )} 
             viewportRef={scrollAreaViewportRef}
         >
@@ -783,8 +785,8 @@ function PageContent() {
 
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            (hasStarted || authState.state === 'authenticated') ? "bottom-0" : "top-1/2 -translate-y-1/2",
-            !(hasStarted || authState.state === 'authenticated') && "flex items-center justify-center"
+            hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2",
+            !hasStarted && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
                 <WelcomeMessage user={user} isLoading={authState.state === 'loading'} />
@@ -843,3 +845,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
