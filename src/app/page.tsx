@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, Phone, KeyRound, History } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, Phone, KeyRound, History, AlertCircle } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 // Define a type for a single history entry
@@ -188,6 +189,12 @@ function AuthArea() {
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [hostname, setHostname] = useState('');
+
+    useEffect(() => {
+        // This code runs only in the browser, safely accessing `window`.
+        setHostname(window.location.hostname);
+    }, []);
 
     const handleSendCode = async () => {
         if (!phone) {
@@ -226,6 +233,18 @@ function AuthArea() {
 
     return (
         <div className="w-full max-w-sm space-y-4 p-4 pointer-events-auto">
+            {hostname && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Configuration Needed</AlertTitle>
+                    <AlertDescription>
+                        To enable sign-in, add the following hostname to your Firebase project's "Authorized domains" list:
+                        <div className="font-mono bg-muted p-2 rounded-md my-2 text-center break-all">
+                            {hostname}
+                        </div>
+                    </AlertDescription>
+                </Alert>
+            )}
              <div id="recaptcha-container"></div>
             {authState.state !== 'otp_sent' ? (
                 <div className="flex items-center space-x-2">
@@ -916,3 +935,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
