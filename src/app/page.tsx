@@ -36,7 +36,7 @@ import { WelcomeToast } from '@/components/welcome-toast';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
 import { CacheWarmer } from '@/components/cache-warmer';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useFeedbackStore } from '@/lib/feedback-store';
 import { FeedbackTable } from '@/components/feedback-table';
@@ -620,8 +620,8 @@ export default function Home() {
         {/* Input Bar */}
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            isMobile ? "bottom-0" : (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
-            !isMobile && !hasStarted && "flex items-center justify-center"
+            (hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2"),
+            !hasStarted && "flex items-center justify-center"
         )}>
             <div className="w-full pointer-events-auto">
                  <InputArea />
@@ -637,7 +637,7 @@ export default function Home() {
         </SidebarInset>
         <FeedbackForm isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
         <Sheet open={isFeedbackListOpen} onOpenChange={setIsFeedbackListOpen}>
-          <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
+           <SheetContent side="right" className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl overflow-y-auto">
             <SheetHeader className="sr-only">
                 <SheetTitle>Feedback Submissions</SheetTitle>
                 <SheetDescription>
@@ -653,6 +653,4 @@ export default function Home() {
     </TooltipProvider>
     </SidebarProvider>
   );
-}    
-
-    
+}

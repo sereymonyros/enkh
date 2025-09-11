@@ -42,7 +42,7 @@ const StatusBadge = ({ status, className }: { status: Feedback['status'], classN
       className={cn(
         className,
         status === 'fixed' && 'bg-blue-400 text-primary-foreground',
-        status === 'new' && 'text-destructive-foreground'
+        status === 'new' && 'bg-destructive text-destructive-foreground'
       )}
     >
       {status}
@@ -144,19 +144,22 @@ export function FeedbackTable() {
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
             <Card key={feedback.id} className={`relative overflow-hidden ${feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}`}>
-                <CardHeader className="p-4 flex flex-row items-start justify-between">
-                    <div className="space-y-2">
+                <CardHeader className="p-4 flex flex-row items-center justify-between">
+                    <div className="space-y-2 flex-1 pr-12">
                         <RatingStars rating={feedback.rating} />
-                        <p className="font-medium pr-12">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                        <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground space-y-1">
+                       { (feedback.status !== 'fixed' && feedback.status !== 'new') && (
+                        <>
+                           <div>{renderDate(feedback.createdAt)}</div>
+                           <StatusBadge status={feedback.status} />
+                        </>
+                       )}
                     </div>
                 </CardHeader>
-                 {feedback.status === 'fixed' || feedback.status === 'new' ? (
+                 {(feedback.status === 'fixed' || feedback.status === 'new') && (
                   <StatusBadge status={feedback.status} className="absolute top-0 right-0 rounded-none rounded-bl-lg" />
-                ) : (
-                    <div className="absolute bottom-2 right-2 text-right text-xs text-muted-foreground space-y-1">
-                        <div>{renderDate(feedback.createdAt)}</div>
-                        <StatusBadge status={feedback.status} />
-                    </div>
                 )}
             </Card>
         ))}
