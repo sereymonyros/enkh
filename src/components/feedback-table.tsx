@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
@@ -52,6 +53,12 @@ const RatingStars = ({ rating }: { rating: number }) => {
             ))}
         </div>
     )
+}
+
+const renderDate = (createdAt: Date | Timestamp) => {
+    if (!createdAt) return '-';
+    const date = isTimestamp(createdAt) ? createdAt.toDate() : createdAt;
+    return formatDistanceToNow(date, { addSuffix: true });
 }
 
 export function FeedbackTable() {
@@ -104,7 +111,7 @@ export function FeedbackTable() {
     return (
         <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+                <Skeleton key={i} className="h-24 w-full" />
             ))}
         </div>
     )
@@ -115,33 +122,54 @@ export function FeedbackTable() {
   }
 
   return (
-    <div className="border rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[120px]">Rating</TableHead>
-            <TableHead>Comment</TableHead>
-            <TableHead className="w-[120px]">Status</TableHead>
-            <TableHead className="w-[150px] text-right">Date</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {combinedFeedback.map((feedback) => (
-            <TableRow key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
-              <TableCell>
-                <RatingStars rating={feedback.rating} />
-              </TableCell>
-              <TableCell className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</TableCell>
-              <TableCell>
-                <StatusBadge status={feedback.status} />
-              </TableCell>
-              <TableCell className="text-right text-muted-foreground">
-                {feedback.createdAt ? formatDistanceToNow(isTimestamp(feedback.createdAt) ? feedback.createdAt.toDate() : feedback.createdAt, { addSuffix: true }) : '-'}
-              </TableCell>
+    <>
+      {/* Mobile View: Card Layout */}
+      <div className="md:hidden space-y-4">
+        {combinedFeedback.map((feedback) => (
+            <Card key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
+                <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                        <RatingStars rating={feedback.rating} />
+                        <span className="text-xs text-muted-foreground">{renderDate(feedback.createdAt)}</span>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="font-medium mb-2">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                    <StatusBadge status={feedback.status} />
+                </CardContent>
+            </Card>
+        ))}
+      </div>
+
+      {/* Desktop View: Table Layout */}
+      <div className="hidden md:block border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[120px]">Rating</TableHead>
+              <TableHead>Comment</TableHead>
+              <TableHead className="w-[120px]">Status</TableHead>
+              <TableHead className="w-[150px] text-right">Date</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {combinedFeedback.map((feedback) => (
+              <TableRow key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
+                <TableCell>
+                  <RatingStars rating={feedback.rating} />
+                </TableCell>
+                <TableCell className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</TableCell>
+                <TableCell>
+                  <StatusBadge status={feedback.status} />
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {renderDate(feedback.createdAt)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
