@@ -92,10 +92,17 @@ export function FeedbackTable() {
 
     const allFeedback = [...filteredOptimistic, ...serverFeedback];
 
-    // Sort the combined list by date
+    // Sort the combined list by date, handling potential nulls
     allFeedback.sort((a, b) => {
+      if (!a.createdAt) return -1; // Put items without a date first (newest)
+      if (!b.createdAt) return 1;
+
       const dateA = isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt;
       const dateB = isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt;
+
+      if (!dateA) return -1;
+      if (!dateB) return 1;
+
       return dateB.getTime() - dateA.getTime();
     });
     
