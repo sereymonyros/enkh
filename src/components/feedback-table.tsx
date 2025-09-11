@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
@@ -127,18 +127,16 @@ export function FeedbackTable() {
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
             <Card key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
-                <CardHeader className="p-4 flex flex-row items-start justify-end text-right">
-                    <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">{renderDate(feedback.createdAt)}</div>
-                        <StatusBadge status={feedback.status} />
-                    </div>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
+                <CardHeader className="p-4 flex flex-row items-start justify-between">
                     <div className="space-y-2">
                         <RatingStars rating={feedback.rating} />
                         <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
                     </div>
-                </CardContent>
+                    <div className="text-right text-xs text-muted-foreground space-y-1">
+                        <div>{renderDate(feedback.createdAt)}</div>
+                        <StatusBadge status={feedback.status} />
+                    </div>
+                </CardHeader>
             </Card>
         ))}
       </div>
