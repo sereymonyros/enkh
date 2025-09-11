@@ -72,7 +72,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // This effect runs once on initial load to handle the redirect result.
     getRedirectResult(auth)
       .then(async (result) => {
-        debugger;
         if (result) {
           // User has just signed in via redirect.
           toast.success(`Welcome, ${result.user.displayName}!`);
@@ -132,7 +131,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const provider = new GoogleAuthProvider();
     try {
       // Use redirect for all devices for maximum compatibility.
-      debugger;
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Google sign-in error:", error);
