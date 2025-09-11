@@ -17,7 +17,7 @@ type Feedback = {
   id: string;
   rating: number;
   comment: string;
-  createdAt: Timestamp;
+  createdAt: Date | Timestamp;
   status: 'new' | 'viewed' | 'in-progress' | 'fixed';
 };
 
@@ -27,7 +27,7 @@ function isTimestamp(date: any): date is Timestamp {
 }
 
 
-const StatusBadge = ({ status }: { status: Feedback['status'] }) => {
+const StatusBadge = ({ status, className }: { status: Feedback['status'], className?: string }) => {
   const variant = {
     new: 'outline',
     viewed: 'secondary',
@@ -35,7 +35,7 @@ const StatusBadge = ({ status }: { status: Feedback['status'] }) => {
     fixed: 'destructive',
   }[status] as 'default' | 'secondary' | 'outline' | 'destructive' | undefined;
 
-  return <Badge variant={variant}>{status}</Badge>;
+  return <Badge variant={variant} className={className}>{status}</Badge>;
 };
 
 
@@ -94,13 +94,10 @@ export function FeedbackTable() {
 
     // Sort the combined list by date, handling potential nulls
     allFeedback.sort((a, b) => {
-      if (!a.createdAt) return -1; // Put items without a date first (newest)
-      if (!b.createdAt) return 1;
+      const dateA = a.createdAt ? (isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt) : null;
+      const dateB = b.createdAt ? (isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt) : null;
 
-      const dateA = isTimestamp(a.createdAt) ? a.createdAt.toDate() : a.createdAt;
-      const dateB = isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt;
-
-      if (!dateA) return -1;
+      if (!dateA) return -1; // Put items without a date first (newest)
       if (!dateB) return 1;
 
       return dateB.getTime() - dateA.getTime();
@@ -133,17 +130,21 @@ export function FeedbackTable() {
       {/* Mobile View: Card Layout */}
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
-            <Card key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
+            <Card key={feedback.id} className={`relative ${feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}`}>
                 <CardHeader className="p-4 flex flex-row items-start justify-between">
                     <div className="space-y-2">
                         <RatingStars rating={feedback.rating} />
-                        <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                        <p className="font-medium pr-12">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
                     </div>
-                    <div className="text-right text-xs text-muted-foreground space-y-1">
+                </CardHeader>
+                 {feedback.status === 'fixed' ? (
+                  <StatusBadge status={feedback.status} className="absolute top-2 right-2" />
+                ) : (
+                    <div className="absolute bottom-2 right-2 text-right text-xs text-muted-foreground space-y-1">
                         <div>{renderDate(feedback.createdAt)}</div>
                         <StatusBadge status={feedback.status} />
                     </div>
-                </CardHeader>
+                )}
             </Card>
         ))}
       </div>
