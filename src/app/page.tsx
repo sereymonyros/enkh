@@ -36,6 +36,9 @@ import { WelcomeToast } from '@/components/welcome-toast';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
 import { CacheWarmer } from '@/components/cache-warmer';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useFeedbackStore } from '@/lib/feedback-store';
 
 
 // Define a type for a single history entry
@@ -69,6 +72,7 @@ export default function Home() {
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const { feedbackCount, setServerFeedback } = useFeedbackStore();
 
 
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -83,7 +87,21 @@ export default function Home() {
 
   useEffect(() => {
     seedDatabaseIfNeeded();
-  }, []);
+    
+    // Listen for real-time updates from Firestore for feedback
+    const feedbacksCollection = collection(db, 'feedbacks');
+    const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const feedbacks = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+        }));
+        // Update the feedback store with the full list
+        setServerFeedback(feedbacks as any);
+    });
+
+    return () => unsubscribe();
+  }, [setServerFeedback]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -494,6 +512,7 @@ export default function Home() {
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
+              {feedbackCount > 0 && (
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild variant="ghost" className="justify-center text-blue-400">
                         <Link href="/feedback">
@@ -501,6 +520,7 @@ export default function Home() {
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="justify-center items-center">

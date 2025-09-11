@@ -2,14 +2,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { addFeedbackListener } from '@/lib/broadcast-channel';
 
@@ -57,45 +55,27 @@ const RatingStars = ({ rating }: { rating: number }) => {
 }
 
 export function FeedbackTable() {
-  const [serverFeedback, setServerFeedback] = useState<Feedback[]>([]);
+  const { serverFeedback, optimisticFeedback, addOptimisticFeedback } = useFeedbackStore();
   const [isLoading, setIsLoading] = useState(true);
-  const { optimisticFeedback, addOptimisticFeedback } = useFeedbackStore();
 
   useEffect(() => {
-    // Listen for real-time updates from Firestore
-    const feedbacksCollection = collection(db, 'feedbacks');
-    const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
-    const unsubscribeFirestore = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const feedbacks = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as Feedback));
-        setServerFeedback(feedbacks);
+    // If server feedback is already loaded from the store, we are not loading.
+    if (serverFeedback.length > 0) {
         setIsLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching feedback: ", error);
-        setIsLoading(false);
-      }
-    );
-
+    }
     // Listen for optimistic updates from other tabs
     const unsubscribeChannel = addFeedbackListener((newFeedback) => {
         // When a message is received, add it to this tab's zustand store
         addOptimisticFeedback(newFeedback);
     });
 
-    // Cleanup subscriptions on component unmount
+    // Cleanup subscription on component unmount
     return () => {
-        unsubscribeFirestore();
         unsubscribeChannel();
     };
-  }, [addOptimisticFeedback]);
+  }, [addOptimisticFeedback, serverFeedback]);
 
   const combinedFeedback = useMemo(() => {
-    const serverIds = new Set(serverFeedback.map(f => f.id));
     // Filter out optimistic items that have been replaced by server data
     const filteredOptimistic = optimisticFeedback.filter(
         // An optimistic item is kept if there's no server item with the same comment and rating.
@@ -111,9 +91,13 @@ export function FeedbackTable() {
       const dateB = isTimestamp(b.createdAt) ? b.createdAt.toDate() : b.createdAt;
       return dateB.getTime() - dateA.getTime();
     });
+    
+    if (allFeedback.length > 0 && isLoading) {
+        setIsLoading(false);
+    }
 
     return allFeedback;
-  }, [serverFeedback, optimisticFeedback]);
+  }, [serverFeedback, optimisticFeedback, isLoading]);
 
 
   if (isLoading) {
