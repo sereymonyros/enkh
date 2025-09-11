@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { useFeedbackStore, OptimisticFeedback } from '@/lib/feedback-store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star } from 'lucide-react';
@@ -127,17 +127,17 @@ export function FeedbackTable() {
       <div className="md:hidden space-y-4">
         {combinedFeedback.map((feedback) => (
             <Card key={feedback.id} className={feedback.id.startsWith('optimistic-') ? 'opacity-50' : ''}>
-                <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
+                <CardHeader className="p-4">
+                    <div className="flex justify-between items-start gap-4">
                         <RatingStars rating={feedback.rating} />
-                        <div className="flex flex-col items-end gap-2">
-                            <span className="text-xs text-muted-foreground">{renderDate(feedback.createdAt)}</span>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{renderDate(feedback.createdAt)}</span>
                             <StatusBadge status={feedback.status} />
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <p className="font-medium pt-2">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
+                <CardContent className="p-4 pt-0">
+                    <p className="font-medium">{feedback.comment || <span className="text-muted-foreground">No comment</span>}</p>
                 </CardContent>
             </Card>
         ))}
