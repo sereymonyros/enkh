@@ -493,7 +493,7 @@ export default function Home() {
                 </Button>
                </div>
             </div>
-            <div className={cn("bg-card rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
+            <div className={cn("bg-zinc-700 rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
               {originalTextStatic}
               {isEditing && (
                  <div
