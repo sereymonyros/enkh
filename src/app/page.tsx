@@ -70,6 +70,73 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
+type InputAreaProps = {
+  inputText: string;
+  setInputText: (text: string) => void;
+  isLoading: boolean;
+  isEditing: boolean;
+  isShaking: boolean;
+  onTranslate: () => void;
+  onCancel: () => void;
+};
+
+// Extracted InputArea component
+const InputArea = ({
+  inputText,
+  setInputText,
+  isLoading,
+  isEditing,
+  isShaking,
+  onTranslate,
+  onCancel,
+}: InputAreaProps) => (
+  <div
+    className={cn(
+      'w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto',
+      isShaking ? 'animate-shake' : ''
+    )}
+  >
+    <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
+      <Textarea
+        placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
+        className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+        rows={1}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            onTranslate();
+          }
+        }}
+        disabled={isEditing}
+      />
+    </div>
+    <div className="flex justify-center items-center gap-4">
+      {!isLoading && (
+        <Button
+          size="icon"
+          className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
+          onClick={onTranslate}
+          disabled={isLoading || isEditing}
+        >
+          <Send size={24} />
+        </Button>
+      )}
+      {isLoading && (
+        <Button
+          size="icon"
+          className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
+          onClick={onCancel}
+        >
+          <StopCircle size={24} />
+        </Button>
+      )}
+    </div>
+  </div>
+);
+
+
 export default function Home() {
   const [inputText, setInputText] = useState('Hello');
   const [isLoading, setIsLoading] = useState(false);
@@ -501,51 +568,6 @@ export default function Home() {
     }
   };
 
-  const InputArea = () => (
-     <div className={cn(
-        "w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto",
-        isShaking ? 'animate-shake' : ''
-      )}>
-      <div className="border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm">
-        <Textarea
-          placeholder="បញ្ចូលអត្ថបទដើម្បីបកប្រែ (en-kh-en)"
-          className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px]"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          rows={1}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleTranslate(inputText);
-            }
-          }}
-          disabled={editingItemId !== null}
-        />
-      </div>
-      <div className="flex justify-center items-center gap-4">
-        {!isLoading && (
-              <Button
-                size="icon"
-                className="bg-primary/10 text-blue-400 rounded-full w-12 h-12 hover:bg-transparent"
-                onClick={() => handleTranslate(inputText)}
-                disabled={isLoading || editingItemId !== null}
-              >
-                <Send size={24} />
-              </Button>
-        )}
-        {isLoading && (
-          <Button
-                size="icon"
-                className="bg-destructive/10 text-red-400 rounded-full w-12 h-12 hover:bg-transparent animate-pulse-bg"
-                onClick={handleCancel}
-              >
-                <StopCircle size={24} />
-              </Button>
-          )}
-      </div>
-    </div>
-  );
-
 
   return (
     <SidebarProvider defaultOpen={false}>
@@ -624,7 +646,15 @@ export default function Home() {
             !hasStarted && "flex items-center justify-center"
         )}>
             <div className="w-full pointer-events-auto">
-                 <InputArea />
+                 <InputArea
+                    inputText={inputText}
+                    setInputText={setInputText}
+                    isLoading={isLoading}
+                    isEditing={editingItemId !== null}
+                    isShaking={isShaking}
+                    onTranslate={() => handleTranslate(inputText)}
+                    onCancel={handleCancel}
+                 />
             </div>
         </div>
         
