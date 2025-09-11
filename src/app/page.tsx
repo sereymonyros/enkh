@@ -92,7 +92,7 @@ const InputArea = ({
 }: InputAreaProps) => (
   <div
     className={cn(
-      'w-full max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto',
+      'w-full max-w-3xl mx-auto px-4 py-4 flex flex-col gap-3 pointer-events-auto',
       isShaking ? 'animate-shake' : ''
     )}
   >
