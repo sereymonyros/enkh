@@ -113,7 +113,7 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-      <div className="absolute bottom-[-14px] left-8 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[15px] border-t-blue-400"></div>
+      <div className="absolute bottom-[-10px] left-12 w-5 h-5 bg-blue-400 transform -rotate-45"></div>
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
@@ -680,5 +680,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
