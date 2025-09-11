@@ -842,32 +842,32 @@ setIsFeedbackOpen(false);
             <SheetHeader className="sr-only">
               <SheetTitle>Recent History</SheetTitle>
             </SheetHeader>
-            {localHistory.length > 0 && (
-              <div className="p-2 border-b border-border">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Clear History
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete your translation history from this device. This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearHistory}>
-                        Continue
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
+            <div className="relative p-2 border-b border-border">
+              <h3 className="text-lg font-semibold text-center">Recent History</h3>
+              {localHistory.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="absolute top-1/2 right-2 -translate-y-1/2 text-blue-400">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete your translation history from this device. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearHistory}>
+                          Continue
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+              )}
+            </div>
             <ScrollArea className="h-full w-full">
                 <div className="flex flex-col gap-1 p-2">
                 {localHistory.length === 0 ? (
@@ -907,3 +907,4 @@ export default function Home() {
 }
 
     
+
