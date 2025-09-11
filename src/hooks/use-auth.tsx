@@ -13,10 +13,10 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   signOut as firebaseSignOut,
-  GoogleAuthProvider,
   User,
-  linkWithPopup,
-  signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -27,7 +27,8 @@ import { mergeFirestoreHistory } from '@/lib/db';
 interface AuthContextType {
   user: User | null;
   authLoading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithPhone: (phoneNumber: string) => Promise<void>;
+  verifyOtp: (otp: string) => Promise<void>;
   signOut: () => Promise<void>;
   syncHistory: () => Promise<void>;
 }
@@ -39,6 +40,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+// Store recaptcha and confirmationResult outside the component state
+let recaptchaVerifier: RecaptchaVerifier | null = null;
+let confirmationResult: ConfirmationResult | null = null;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -57,60 +62,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser); // Immediately set user state
+      setAuthLoading(true);
       if (currentUser) {
-        // If there's a user, sync their history.
+        setUser(currentUser);
         if (!currentUser.isAnonymous) {
           await syncHistory(currentUser.uid);
         }
       } else {
-        // If there's no user, sign in anonymously.
-        // This will trigger another onAuthStateChanged event.
-        try {
-          await signInAnonymously(auth);
-        } catch (error) {
-          console.error('Anonymous sign-in failed:', error);
-        }
+        await signInAnonymously(auth);
       }
-      // Regardless of outcome, stop loading after the initial check is done.
       setAuthLoading(false);
     });
-
     return () => unsubscribe();
   }, [syncHistory]);
 
-  const signInWithGoogle = async () => {
+  const signInWithPhone = async (phoneNumber: string) => {
     setAuthLoading(true);
-    const provider = new GoogleAuthProvider();
     try {
-      let result;
-      if (auth.currentUser && auth.currentUser.isAnonymous) {
-        // If the user is anonymous, link their account instead of signing in.
-        // This preserves their UID and any data associated with it.
-        result = await linkWithPopup(auth.currentUser, provider);
-      } else {
-        // If there's no user or they are already a permanent user, do a normal sign-in.
-        result = await signInWithPopup(auth, provider);
-      }
-      // The onAuthStateChanged listener will handle setting the user and syncing history.
-      toast.success(`Welcome, ${result.user.displayName}!`);
-    } catch (error: any) {
-      console.error('Google sign-in failed:', error);
-      toast.error('Could not sign in with Google.', {
-        description: error.message || 'Please try again later.',
-      });
-    } finally {
-      // Always set loading to false after the process is complete.
+        if (!recaptchaVerifier) {
+            recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response: any) => {
+                    // reCAPTCHA solved, allow signInWithPhoneNumber.
+                }
+            });
+        }
+        
+        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+
+    } catch (error) {
       setAuthLoading(false);
+      // Reset the verifier if it fails.
+      if (recaptchaVerifier) {
+        recaptchaVerifier.clear();
+        recaptchaVerifier = null;
+      }
+      // Re-throw to be caught by the UI component
+      throw error;
+    } finally {
+      // Don't set authLoading to false here, wait for OTP verification
     }
   };
+
+  const verifyOtp = async (otp: string) => {
+    if (!confirmationResult) {
+      throw new Error("No confirmation result available. Please send the code first.");
+    }
+    setAuthLoading(true);
+    try {
+      await confirmationResult.confirm(otp);
+      // onAuthStateChanged will handle the rest.
+    } catch (error) {
+       setAuthLoading(false);
+       throw error;
+    }
+    // `authLoading` will be set to false by onAuthStateChanged
+  };
+
 
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // The onAuthStateChanged listener will handle setting user to null
-      // and then automatically trigger anonymous sign-in again.
+      setUser(null);
       toast.success('You have been signed out.');
+      // onAuthStateChanged will trigger anonymous sign-in
     } catch (error) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
@@ -120,9 +135,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value = {
     user,
     authLoading,
-    signInWithGoogle,
+    signInWithPhone,
+    verifyOtp,
     signOut,
-    // syncHistory is now internal to the provider, but we could expose it if needed
     syncHistory: async () => {
       if (auth.currentUser) await syncHistory(auth.currentUser.uid);
     }
@@ -143,3 +158,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

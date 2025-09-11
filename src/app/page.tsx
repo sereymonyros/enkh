@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, LogIn, History } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, Phone, KeyRound, History } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -66,6 +66,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { formatDistanceToNow } from 'date-fns';
+import { Input } from '@/components/ui/input';
 
 
 // Define a type for a single history entry
@@ -96,11 +97,10 @@ const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) 
     );
   }
 
-  if (user && !user.isAnonymous && user.displayName) {
-    const firstName = user.displayName.split(' ')[0];
+  if (user && user.phoneNumber) {
     return (
       <div className="text-center text-lg font-semibold p-2">
-        Hello, {firstName}
+        Hello, {user.phoneNumber}
       </div>
     );
   }
@@ -183,6 +183,86 @@ const InputArea = ({
   </div>
 );
 
+function PhoneAuth() {
+    const { signInWithPhone, verifyOtp, authLoading } = useAuth();
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [step, setStep] = useState<'phone' | 'otp'>('phone');
+    const [isSending, setIsSending] = useState(false);
+
+    const handleSendCode = async () => {
+        if (!phone) {
+            toast.error("Please enter a phone number.");
+            return;
+        }
+        setIsSending(true);
+        try {
+            await signInWithPhone(phone);
+            setStep('otp');
+            toast.success("Verification code sent!");
+        } catch (error: any) {
+            console.error("Failed to send code:", error);
+            toast.error("Failed to send code", { description: error.message });
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    const handleVerifyCode = async () => {
+        if (!otp) {
+            toast.error("Please enter the verification code.");
+            return;
+        }
+        try {
+            await verifyOtp(otp);
+            // onAuthStateChanged will handle UI updates
+            toast.success("Successfully signed in!");
+        } catch (error: any) {
+            console.error("Failed to verify code:", error);
+            toast.error("Sign in failed", { description: error.message });
+        }
+    };
+
+    return (
+        <div className="w-full max-w-sm space-y-4 p-4">
+             <div id="recaptcha-container"></div>
+            {step === 'phone' ? (
+                <div className="flex items-center space-x-2">
+                    <div className="relative flex-1">
+                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            type="tel"
+                            placeholder="Phone number (+1...)"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <Button onClick={handleSendCode} disabled={isSending || authLoading}>
+                        {isSending ? "Sending..." : "Send Code"}
+                    </Button>
+                </div>
+            ) : (
+                <div className="flex items-center space-x-2">
+                    <div className="relative flex-1">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            type="text"
+                            placeholder="6-digit code"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                    <Button onClick={handleVerifyCode} disabled={authLoading}>
+                        {authLoading ? "Verifying..." : "Verify"}
+                    </Button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 function PageContent() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -199,7 +279,7 @@ function PageContent() {
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const [hasStarted, setHasStarted] = useState(false);
   const { setOpenMobile } = useSidebar();
-  const { user, signInWithGoogle, signOut: firebaseSignOut, authLoading, syncHistory } = useAuth();
+  const { user, signOut, authLoading, syncHistory } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
@@ -688,29 +768,27 @@ function PageContent() {
                   </Button>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
-                   {user ? (
+                   {user && !user.isAnonymous ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="p-0 rounded-full h-8 w-8" disabled={authLoading}>
                                <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} />
-                                <AvatarFallback>{user.isAnonymous ? 'A' : (user.displayName?.charAt(0) || 'U')}</AvatarFallback>
+                                <AvatarImage src={user.photoURL || ''} alt={user.phoneNumber || 'U'} />
+                                <AvatarFallback>{user.phoneNumber?.substring(0, 2) || 'U'}</AvatarFallback>
                                </Avatar>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>{user.isAnonymous ? 'Anonymous' : (user.displayName || 'My Account')}</DropdownMenuLabel>
+                            <DropdownMenuLabel>{user.phoneNumber || 'My Account'}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={firebaseSignOut} className="text-red-500">
+                            <DropdownMenuItem onClick={signOut} className="text-red-500">
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>Log out</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     ) : (
-                        <Button variant="ghost" size="icon" className="text-blue-400" onClick={signInWithGoogle} disabled={authLoading}>
-                            <LogIn />
-                        </Button>
+                       <PhoneAuth />
                     )}
                  </SidebarMenuItem>
               </SidebarMenu>
