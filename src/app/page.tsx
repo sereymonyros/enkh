@@ -601,19 +601,15 @@ export default function Home() {
                     </Button>
                   </SidebarMenuItem>
                 )}
-              </SidebarMenu>
-            </SidebarHeader>
-            <SidebarContent className="justify-center items-center">
-            </SidebarContent>
-            <SidebarFooter className="justify-center items-center">
-              <SidebarMenu>
                 <SidebarMenuItem>
                   <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
                     <MessageSquare />
                   </Button>
                 </SidebarMenuItem>
               </SidebarMenu>
-            </SidebarFooter>
+            </SidebarHeader>
+            <SidebarContent className="justify-center items-center">
+            </SidebarContent>
           </div>
         </Sidebar>
         <SidebarInset>
@@ -684,6 +680,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
 
 
 
