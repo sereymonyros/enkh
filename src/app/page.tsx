@@ -97,6 +97,15 @@ const WelcomeMessage = ({ user, isLoading }: { user: any; isLoading: boolean }) 
       </div>
     );
   }
+  
+  if (user && !user.isAnonymous && user.displayName) {
+    const firstName = user.displayName.split(' ')[0];
+    return (
+      <div className="text-center text-lg font-semibold p-2">
+        Hello, {firstName}
+      </div>
+    );
+  }
 
   return (
       <div className="text-center text-lg font-semibold p-2">
