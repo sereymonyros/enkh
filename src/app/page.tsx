@@ -688,9 +688,8 @@ function PageContent() {
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                   ) : (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full">
+                    
+                        <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
                           <Avatar className="h-8 w-8">
                             <AvatarImage
                               src={user.photoURL || ''}
@@ -701,16 +700,6 @@ function PageContent() {
                             </AvatarFallback>
                           </Avatar>
                         </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={signOut}>
-                          <LogOut className="mr-2 h-4 w-4" />
-                          <span>Sign Out</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   ))}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
