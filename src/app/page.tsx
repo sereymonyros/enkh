@@ -593,13 +593,11 @@ export default function Home() {
                 <SidebarMenuItem>
                   <ThemeToggle />
                 </SidebarMenuItem>
-                {feedbackCount > 0 && (
-                  <SidebarMenuItem>
-                    <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
-                      <List />
-                    </Button>
-                  </SidebarMenuItem>
-                )}
+                <SidebarMenuItem>
+                  <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
+                    <List />
+                  </Button>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackOpen(true)}>
                     <MessageSquare />
@@ -653,7 +651,7 @@ export default function Home() {
             </div>
         </div>
         
-           <div className="fixed bottom-4 left-4 z-20 pointer-events-auto">
+           <div className="fixed top-4 left-4 z-20 pointer-events-auto">
               <SidebarTrigger variant="ghost" size="icon" className="text-blue-400">
                   <Menu />
               </SidebarTrigger>
