@@ -49,6 +49,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AngkorWatIcon } from '@/components/icons/angkor-wat-icon';
 
 
 // Define a type for a single history entry
@@ -113,7 +114,7 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-      <div className="absolute bottom-[-10px] left-12 w-5 h-5 bg-blue-400 transform -rotate-45"></div>
+      <AngkorWatIcon className="absolute bottom-[-18px] left-12 w-8 h-8 text-blue-400 transform -rotate-45" />
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
@@ -493,7 +494,7 @@ export default function Home() {
                 </Button>
                </div>
             </div>
-            <div className={cn("bg-zinc-700 rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
+            <div className={cn("bg-blue-100 dark:bg-zinc-700 rounded-t-2xl rounded-bl-2xl p-3 max-w-[80%]")}>
               {originalTextStatic}
               {isEditing && (
                  <div
