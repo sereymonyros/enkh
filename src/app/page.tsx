@@ -49,7 +49,6 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { AngkorWatIcon } from '@/components/icons/angkor-wat-icon';
 
 
 // Define a type for a single history entry
@@ -114,7 +113,7 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-      <AngkorWatIcon className="absolute bottom-[-18px] left-12 w-8 h-8 text-blue-400 transform -rotate-45" />
+      <div className="absolute bottom-[-8px] left-12 w-4 h-4 bg-background/50 border-r-2 border-b-2 border-blue-400 transform -rotate-45" style={{clipPath: 'polygon(100% 0, 0 100%, 100% 100%)'}}/>
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
