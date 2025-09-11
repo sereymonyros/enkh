@@ -114,7 +114,13 @@ const InputArea = ({
           disabled={isEditing}
         />
       </div>
-       <div className="absolute bottom-[-10px] left-12 w-4 h-4 bg-blue-400 transform -rotate-45"></div>
+       <Image
+          src="https://firebasestorage.googleapis.com/v0/b/enkh-ovr0a.firebasestorage.app/o/airport.png?alt=media&token=db6b8b09-4b79-4c2c-9e81-a011b1a4bdce"
+          alt="Chat tail"
+          width={40}
+          height={40}
+          className="absolute bottom-[-18px] left-12"
+        />
     </div>
     <div className="flex justify-center items-center gap-4 mt-2">
       {!isLoading && (
