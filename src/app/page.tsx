@@ -590,14 +590,10 @@ export default function Home() {
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader className="justify-center items-center">
-              <SidebarMenu>
+              <SidebarMenu className="gap-1.5">
                 <SidebarMenuItem>
                   <ThemeToggle />
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarHeader>
-            <SidebarContent className="justify-center items-center">
-              <SidebarMenu>
                 {feedbackCount > 0 && (
                   <SidebarMenuItem>
                     <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
@@ -606,6 +602,8 @@ export default function Home() {
                   </SidebarMenuItem>
                 )}
               </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent className="justify-center items-center">
             </SidebarContent>
             <SidebarFooter className="justify-center items-center">
               <SidebarMenu>
@@ -686,5 +684,6 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
 
 
