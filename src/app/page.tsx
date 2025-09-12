@@ -228,7 +228,7 @@ function PageContent() {
 
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { user, signOut, authState } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -486,8 +486,10 @@ function PageContent() {
 
   useEffect(() => {
     // When the user changes (e.g., on login/logout), refetch the history.
-    fetchHistory();
-  }, [user, fetchHistory]);
+    if (authState.state !== 'loading') {
+      fetchHistory();
+    }
+  }, [user, authState, fetchHistory]);
 
 
   useEffect(() => {
@@ -721,7 +723,7 @@ function PageContent() {
                </div>
                
             </div>
-             <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
+             <div className="rounded-tr-2xl rounded-b-2xl p-3">
                 <p className="text-lg">{item.translatedText}</p>
             </div>
           </div>
@@ -754,14 +756,24 @@ function PageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={signInWithGoogle}
+                      onClick={() => {
+                        // This assumes you have a function to trigger Google sign-in
+                        // You'll need to implement signInWithGoogle in your useAuth hook
+                        const { signInWithGoogle } = useAuth.getState();
+                        signInWithGoogle();
+                      }}
                     >
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={signInWithFacebook}
+                      onClick={() => {
+                        // This assumes you have a function to trigger Facebook sign-in
+                        // You'll need to implement signInWithFacebook in your useAuth hook
+                        const { signInWithFacebook } = useAuth.getState();
+                        signInWithFacebook();
+                      }}
                     >
                       <FacebookIcon className="h-5 w-5 text-foreground" />
                     </Button>
@@ -933,3 +945,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
