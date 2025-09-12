@@ -161,8 +161,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
     
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle the user state change and welcome toast.
+      toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
       // Don't show an error if the user closes the popup.
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
@@ -174,6 +175,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       let description = error.message || "Could not complete the sign-in process.";
        if (error.code === 'auth/account-exists-with-different-credential') {
           description = 'An account already exists with this email address. Please sign in with the original method.'
+        } else if (error.code === 'auth/unauthorized-domain') {
+          description = 'This domain is not authorized for Facebook sign-in. Please contact support.'
         }
       toast.error("Facebook Sign-In Failed", {
         description: description,
