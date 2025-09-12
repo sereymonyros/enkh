@@ -662,7 +662,7 @@ function PageContent() {
                         isEditing ? "w-full opacity-100" : "w-0 opacity-0"
                     )}
                     >
-                    <div className="relative border border-blue-400 p-1.5 rounded-2xl">
+                    <div className="relative border-t border-l border-blue-400 p-1.5 rounded-tl-2xl">
                         <Textarea
                             value={editedText}
                             onChange={(e) => setEditedText(e.target.value)}
@@ -945,5 +945,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
