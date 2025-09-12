@@ -198,7 +198,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -724,9 +724,6 @@ function PageContent() {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        // This assumes you have a function to trigger Google sign-in
-                        // You'll need to implement signInWithGoogle in your useAuth hook
-                        const { signInWithGoogle } = useAuth.getState();
                         signInWithGoogle();
                       }}
                     >
@@ -736,9 +733,6 @@ function PageContent() {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        // This assumes you have a function to trigger Facebook sign-in
-                        // You'll need to implement signInWithFacebook in your useAuth hook
-                        const { signInWithFacebook } = useAuth.getState();
                         signInWithFacebook();
                       }}
                     >
@@ -912,3 +906,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
