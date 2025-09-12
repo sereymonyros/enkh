@@ -23,8 +23,8 @@ export function ThemeToggle() {
       size="icon"
       onClick={handleThemeChange}
     >
-      <Sun className="h-[1.5rem] w-[1.3rem] text-blue-400 opacity-100 dark:hidden" />
-      <Moon className="hidden h-5 w-5 text-blue-400 opacity-100 dark:block" />
+      <Moon className="h-[1.5rem] w-[1.3rem] text-blue-400 opacity-100 dark:hidden" />
+      <Sun className="hidden h-5 w-5 text-blue-400 opacity-100 dark:block" />
       <span className="sr-only">Toggle theme</span>
     </Button>
   )
