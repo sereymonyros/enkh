@@ -18,6 +18,8 @@ import {
   FacebookAuthProvider,
   getRedirectResult,
   signInWithRedirect,
+  signInWithPopup,
+  OAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -154,11 +156,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle the user state change.
+      toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
       console.error("Facebook sign-in error:", error);
+      let description = error.message || "Could not complete the sign-in process.";
+       if (error.code === 'auth/account-exists-with-different-credential') {
+          description = 'An account already exists with this email address. Please sign in with the original method.'
+        }
       toast.error("Facebook Sign-In Failed", {
-        description: error.message || "Could not start the sign-in process."
+        description: description,
       });
     }
   };
