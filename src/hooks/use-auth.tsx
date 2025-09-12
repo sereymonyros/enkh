@@ -155,9 +155,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
-    // Only request the 'public_profile' scope, which is granted by default
-    // and does not require App Review from Facebook.
-    provider.addScope('public_profile');
+    // Explicitly set the scope to only 'public_profile' to avoid asking for email,
+    // which requires special app permissions from Facebook.
+    provider.setCustomParameters({
+      'scope': 'public_profile'
+    });
     
     try {
       const result = await signInWithPopup(auth, provider);
