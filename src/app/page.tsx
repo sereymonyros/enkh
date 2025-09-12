@@ -222,6 +222,8 @@ function PageContent() {
   const { setOpenMobile } = useSidebar();
   const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
+  const prevUserRef = useRef(user);
+
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -484,6 +486,16 @@ function PageContent() {
       scrollToBottom();
     }, 0);
   }, [translationHistory, isLoading]);
+
+  useEffect(() => {
+    // When the user logs in (i.e., is no longer anonymous), close the sidebar.
+    if (prevUserRef.current?.isAnonymous && user && !user.isAnonymous) {
+      setOpenMobile(false);
+    }
+    // Update the ref to the current user for the next render.
+    prevUserRef.current = user;
+  }, [user, setOpenMobile]);
+
 
   if (authState.state === 'loading') {
     return (

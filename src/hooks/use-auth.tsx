@@ -161,9 +161,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
     
     try {
-      const result = await signInWithPopup(auth, provider);
+      await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle the user state change.
-      toast.success(`Welcome, ${result.user.displayName}!`);
+      // toast.success(`Welcome, ${result?.user.displayName}!`);
     } catch (error: any) {
       // Don't show an error if the user closes the popup.
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
