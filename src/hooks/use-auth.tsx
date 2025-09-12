@@ -69,6 +69,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
+    // onAuthStateChanged is the single source of truth for auth state.
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setAuthState({ state: 'authenticated', user: currentUser });
+        await syncHistory(currentUser.uid);
+      } else {
+        setUser(null);
+        setAuthState({ state: 'unauthenticated' });
+      }
+    });
+    
+    // Separately, handle the result of a redirect operation on initial load.
+    // This doesn't set the state directly, but might provide a welcome message.
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
@@ -83,17 +97,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           });
         }
       });
-      
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setAuthState({ state: 'authenticated', user: currentUser });
-        await syncHistory(currentUser.uid);
-      } else {
-        setUser(null);
-        setAuthState({ state: 'unauthenticated' });
-      }
-    });
 
     return () => unsubscribe();
   }, [syncHistory]);
@@ -128,10 +131,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
     
     try {
+      // Use signInWithPopup for Facebook to avoid redirect issues.
       const result = await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the state update, but we can show a toast here.
       toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
-      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+      // Don't show an error toast if the user cancelled the popup.
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
         console.log("Facebook sign-in cancelled by user.");
         return;
       }
@@ -141,7 +147,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
        if (error.code === 'auth/account-exists-with-different-credential') {
           description = 'An account already exists with this email address. Please sign in with the original method.'
         } else if (error.code === 'auth/unauthorized-domain') {
-          description = 'This domain is not authorized for Facebook sign-in. Please contact support.'
+          description = 'This domain is not authorized for Facebook sign-in. Please check your Firebase project settings.'
         }
       toast.error("Facebook Sign-In Failed", {
         description: description,

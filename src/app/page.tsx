@@ -232,6 +232,8 @@ function PageContent() {
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
+  const mony = user;
+  debugger;
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
