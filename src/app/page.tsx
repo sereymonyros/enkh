@@ -920,7 +920,6 @@ setIsFeedbackOpen(false);
   );
 }
 
-
 export default function Home() {
   return (
     <SidebarProvider defaultOpen={false}>
