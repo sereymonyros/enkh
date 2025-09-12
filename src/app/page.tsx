@@ -132,6 +132,7 @@ type InputAreaProps = {
   isShaking: boolean;
   onTranslate: () => void;
   onCancel: () => void;
+  textareaRef: React.Ref<HTMLTextAreaElement>;
 };
 
 // Extracted InputArea component
@@ -143,6 +144,7 @@ const InputArea = ({
   isShaking,
   onTranslate,
   onCancel,
+  textareaRef,
 }: InputAreaProps) => (
   <div
     className={cn(
@@ -160,6 +162,7 @@ const InputArea = ({
             unoptimized
         />
         <Textarea
+          ref={textareaRef}
           placeholder="សរសេរ..."
           className="bg-transparent border-none text-lg resize-none flex-1 focus-visible:ring-0 placeholder:text-[15px] z-10"
           value={inputText}
@@ -217,6 +220,7 @@ function PageContent() {
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
@@ -491,6 +495,10 @@ function PageContent() {
     // When the user logs in (i.e., is no longer anonymous), close the sidebar.
     if (prevUserRef.current?.isAnonymous && user && !user.isAnonymous) {
       setOpenMobile(false);
+      // After a short delay to allow the sidebar to close, focus the textarea.
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 300); // 300ms matches the default sheet animation duration
     }
     // Update the ref to the current user for the next render.
     prevUserRef.current = user;
@@ -814,6 +822,7 @@ function PageContent() {
              <div className="w-full pointer-events-auto">
                 <WelcomeMessage user={user} />
                 <InputArea
+                    textareaRef={textareaRef}
                     inputText={inputText}
                     setInputText={setInputText}
                     isLoading={isLoading}
