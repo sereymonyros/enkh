@@ -48,7 +48,6 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
 
   const syncHistory = useCallback(async (uid: string) => {
@@ -69,20 +68,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    // onAuthStateChanged is the single source of truth for auth state.
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setAuthState({ state: 'authenticated', user: currentUser });
-        await syncHistory(currentUser.uid);
+    // This is the single source of truth for auth state.
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthState({ state: 'authenticated', user });
+        await syncHistory(user.uid);
       } else {
-        setUser(null);
         setAuthState({ state: 'unauthenticated' });
       }
     });
-    
-    // Separately, handle the result of a redirect operation on initial load.
-    // This doesn't set the state directly, but might provide a welcome message.
+
+    // Handle any redirect results on startup.
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
@@ -93,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error("Error processing redirect result:", error);
         if (error.code === 'auth/account-exists-with-different-credential') {
           toast.error("Sign-In Failed", {
-            description: 'An account already exists with this email address. Please sign in with the original method.'
+            description: 'An account already exists with this email. Please sign in with the original method.'
           });
         }
       });
@@ -126,20 +122,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
-    provider.setCustomParameters({
-      'scope': 'public_profile'
-    });
-    
     try {
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Facebook sign-in error:", error);
       let description = error.message || "Could not complete the sign-in process.";
-       if (error.code === 'auth/account-exists-with-different-credential') {
-          description = 'An account already exists with this email address. Please sign in with the original method.'
-        } else if (error.code === 'auth/unauthorized-domain') {
-          description = 'This domain is not authorized for Facebook sign-in. Please check your Firebase project settings.'
-        }
+      if (error.code === 'auth/popup-blocked') {
+        description = "The sign-in popup was blocked by your browser. Please allow popups for this site and try again."
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        description = 'An account already exists with this email address. Please sign in with the original method.'
+      }
       toast.error("Facebook Sign-In Failed", {
         description: description,
       });
@@ -147,7 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const value = {
-    user,
+    user: authState.state === 'authenticated' ? authState.user : null,
     authState,
     signOut,
     signInWithGoogle,
@@ -169,3 +161,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

@@ -690,7 +690,7 @@ function PageContent() {
                </div>
                
             </div>
-             <div className="rounded-tr-2xl rounded-b-2xl p-3">
+             <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
                 <p className="text-lg">{item.translatedText}</p>
             </div>
           </div>
@@ -723,18 +723,14 @@ function PageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        signInWithGoogle();
-                      }}
+                      onClick={signInWithGoogle}
                     >
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        signInWithFacebook();
-                      }}
+                      onClick={signInWithFacebook}
                     >
                       <FacebookIcon className="h-5 w-5 text-foreground" />
                     </Button>
@@ -906,5 +902,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
