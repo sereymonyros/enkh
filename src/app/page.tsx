@@ -111,7 +111,7 @@ const WelcomeMessage = ({ user }: { user: any }) => {
     return null;
   }
   
-  if (user && !user.isAnonymous && user.displayName) {
+  if (user && user.displayName) {
     const firstName = user.displayName.split(' ')[0];
     return (
       <div className="text-center text-lg font-semibold p-2">
@@ -120,7 +120,11 @@ const WelcomeMessage = ({ user }: { user: any }) => {
     );
   }
 
-  return null;
+  return (
+      <div className="text-center text-lg font-semibold p-2">
+        Sign in to save your history
+      </div>
+  );
 };
 
 
@@ -492,8 +496,8 @@ function PageContent() {
   }, [translationHistory, isLoading]);
 
   useEffect(() => {
-    // When the user logs in (i.e., is no longer anonymous), close the sidebar.
-    if (prevUserRef.current?.isAnonymous && user && !user.isAnonymous) {
+    // When the user logs in, close the sidebar.
+    if (!prevUserRef.current && user) {
       setOpenMobile(false);
       // After a short delay to allow the sidebar to close, focus the textarea.
       setTimeout(() => {
@@ -732,37 +736,35 @@ function PageContent() {
             <SidebarHeader>
               <div className="flex flex-col items-center justify-center p-2 gap-2">
                 {authState.state === 'authenticated' && user ? (
-                  user.isAnonymous ? (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={signInWithGoogle}
-                      >
-                        <GoogleIcon className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={signInWithFacebook}
-                      >
-                        <FacebookIcon className="h-5 w-5 text-foreground" />
-                      </Button>
-                    </>
-                  ) : (
-                    <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage
-                          src={user.photoURL || ''}
-                          alt={user.displayName || 'User'}
-                        />
-                        <AvatarFallback>
-                          {user.displayName?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  )
-                ) : null}
+                  <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={user.photoURL || ''}
+                        alt={user.displayName || 'User'}
+                      />
+                      <AvatarFallback>
+                        {user.displayName?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={signInWithGoogle}
+                    >
+                      <GoogleIcon className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={signInWithFacebook}
+                    >
+                      <FacebookIcon className="h-5 w-5 text-foreground" />
+                    </Button>
+                  </>
+                )}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
                 <SidebarMenuItem>
