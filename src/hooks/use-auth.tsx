@@ -167,7 +167,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
       // Don't show an error if the user closes the popup.
-      if (error.code === 'auth/cancelled-popup-request') {
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
         console.log("Facebook sign-in cancelled by user.");
         return;
       }
