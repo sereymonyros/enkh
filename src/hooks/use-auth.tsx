@@ -155,6 +155,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
+    // Only request the 'public_profile' scope, which is granted by default
+    // and does not require App Review from Facebook.
+    provider.addScope('public_profile');
+    
     try {
       const result = await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle the user state change.
