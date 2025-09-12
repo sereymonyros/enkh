@@ -15,7 +15,7 @@ import {
   signOut as firebaseSignOut,
   User,
   GoogleAuthProvider,
-  OAuthProvider,
+  FacebookAuthProvider,
   getRedirectResult,
   signInWithRedirect,
 } from 'firebase/auth';
@@ -34,7 +34,7 @@ interface AuthContextType {
   authState: AuthState;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInWithApple: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
 }
 
 // Create the context with a default undefined value
@@ -86,11 +86,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.error("Error processing redirect result:", error);
         const errorCode = error.code;
         const errorMessage = error.message;
-        // The email of the user's account used.
-        const email = error.customData.email;
-        // The AuthCredential type that was used.
-        const credential = GoogleAuthProvider.credentialFromError(error);
-
+        
         let description = errorMessage;
         if (errorCode === 'auth/account-exists-with-different-credential') {
           description = 'An account already exists with this email address. Please sign in with the original method.'
@@ -155,13 +151,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithApple = async () => {
-    const provider = new OAuthProvider('apple.com');
+  const signInWithFacebook = async () => {
+    const provider = new FacebookAuthProvider();
     try {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Apple sign-in error:", error);
-      toast.error("Apple Sign-In Failed", {
+      console.error("Facebook sign-in error:", error);
+      toast.error("Facebook Sign-In Failed", {
         description: error.message || "Could not start the sign-in process."
       });
     }
@@ -172,7 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authState,
     signOut,
     signInWithGoogle,
-    signInWithApple,
+    signInWithFacebook,
   };
 
   return (

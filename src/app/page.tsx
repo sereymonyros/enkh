@@ -67,7 +67,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { GoogleIcon } from '@/components/icons/google-icon';
-import { AppleIcon } from '@/components/icons/apple-icon';
+import { FacebookIcon } from '@/components/icons/facebook-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,7 +220,7 @@ function PageContent() {
 
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithApple } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
 
   const scrollToBottom = () => {
@@ -724,9 +724,9 @@ function PageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={signInWithApple}
+                        onClick={signInWithFacebook}
                       >
-                        <AppleIcon className="h-5 w-5 text-foreground" />
+                        <FacebookIcon className="h-5 w-5 text-foreground" />
                       </Button>
                     </>
                   ) : (
