@@ -156,15 +156,7 @@ const InputArea = ({
       isShaking ? 'animate-shake' : ''
     )}
   >
-    <div className="relative w-full border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/50 backdrop-blur-sm overflow-hidden">
-        <Image
-            src="https://firebasestorage.googleapis.com/v0/b/enkh-ovr0a.firebasestorage.app/o/airport.png?alt=media&token=db6b8b09-4b79-4c2c-9e81-a011b1a4bdce"
-            alt="Textarea background"
-            layout="fill"
-            objectFit="cover"
-            className="absolute inset-0 z-0 pointer-events-none opacity-20"
-            unoptimized
-        />
+    <div className="relative w-full border-2 border-blue-400 rounded-full p-2 flex items-center gap-2 bg-background/80 backdrop-blur-sm overflow-hidden" id="enkhTextArea">
         <Textarea
           ref={textareaRef}
           placeholder="សរសេរ..."
@@ -662,7 +654,7 @@ function PageContent() {
                         isEditing ? "w-full opacity-100" : "w-0 opacity-0"
                     )}
                     >
-                    <div className="relative border-t border-l border-blue-400 p-1.5 rounded-tl-2xl">
+                    <div className="relative border-b-0 border-r-0 border border-blue-400 p-1.5 rounded-2xl">
                         <Textarea
                             value={editedText}
                             onChange={(e) => setEditedText(e.target.value)}
