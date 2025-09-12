@@ -99,6 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       })
       .finally(() => {
+        // Now that the redirect check is done, we can allow anonymous sign-in if needed.
         isProcessingRedirect = false;
       });
 
@@ -155,15 +156,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
-    // THIS IS THE FIX: Overwrite the default scopes and ONLY ask for public_profile.
     provider.setCustomParameters({
       'scope': 'public_profile'
     });
     
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener will handle the user state change.
-      // toast.success(`Welcome, ${result?.user.displayName}!`);
+      // The onAuthStateChanged listener will handle the user state change and welcome toast.
     } catch (error: any) {
       // Don't show an error if the user closes the popup.
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
