@@ -160,6 +160,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // The onAuthStateChanged listener will handle the user state change.
       toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
+      // Don't show an error if the user closes the popup.
+      if (error.code === 'auth/cancelled-popup-request') {
+        console.log("Facebook sign-in cancelled by user.");
+        return;
+      }
+
       console.error("Facebook sign-in error:", error);
       let description = error.message || "Could not complete the sign-in process.";
        if (error.code === 'auth/account-exists-with-different-credential') {
