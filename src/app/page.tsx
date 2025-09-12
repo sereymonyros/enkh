@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, LogOut, History, AlertCircle, User, CopyIcon, LogIn, LoaderCircle, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2 } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -14,10 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -31,17 +27,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarFooter,
-  SidebarMenuButton,
   useSidebar,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackForm } from '@/components/feedback-form';
-import Link from 'next/link';
 import { CacheWarmer } from '@/components/cache-warmer';
-import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useFeedbackStore } from '@/lib/feedback-store';
 import { FeedbackTable } from '@/components/feedback-table';
@@ -51,21 +42,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetClose,
 } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth, AuthState } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { formatDistanceToNow } from 'date-fns';
-import { Input } from '@/components/ui/input';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
 import {
@@ -203,13 +183,11 @@ function PageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [translationHistory, setTranslationHistory] = useState<HistoryItem[]>([]);
   const [isShaking, setIsShaking] = useState(false);
-  const [videoFinished, setVideoFinished] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
-  const [isAnimatingOut, setIsAnimatingOut] = useState<number | null>(null);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -218,14 +196,11 @@ function PageContent() {
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { feedbackCount, setServerFeedback } = useFeedbackStore();
+  const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
   const { user, signOut, authState } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
-
-  const mony = user;
-  debugger;
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -615,7 +590,7 @@ function PageContent() {
     setIsHistoryOpen(false);
   };
 
-  const renderHistoryItem = (item: HistoryItem, index: number) => {
+  const renderHistoryItem = (item: HistoryItem) => {
     if (item.isUser) {
         const isEditing = editingItemId === item.id;
         const originalTextStatic = (
