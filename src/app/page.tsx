@@ -38,7 +38,6 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { WelcomeToast } from '@/components/welcome-toast';
 import { FeedbackForm } from '@/components/feedback-form';
 import Link from 'next/link';
 import { CacheWarmer } from '@/components/cache-warmer';
@@ -68,6 +67,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { GoogleIcon } from '@/components/icons/google-icon';
+import { AppleIcon } from '@/components/icons/apple-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,7 +220,7 @@ function PageContent() {
 
   const { feedbackCount, setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithApple } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
 
   const scrollToBottom = () => {
@@ -710,16 +710,25 @@ function PageContent() {
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
             <SidebarHeader>
-              <div className="flex items-center justify-center p-2">
+              <div className="flex flex-col items-center justify-center p-2 gap-2">
                 {authState.state === 'authenticated' && user ? (
                   user.isAnonymous ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={signInWithGoogle}
-                    >
-                      <GoogleIcon className="h-5 w-5" />
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={signInWithGoogle}
+                      >
+                        <GoogleIcon className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={signInWithApple}
+                      >
+                        <AppleIcon className="h-5 w-5 text-foreground" />
+                      </Button>
+                    </>
                   ) : (
                     <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
                       <Avatar className="h-8 w-8">
@@ -900,7 +909,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
