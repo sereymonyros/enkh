@@ -106,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await firebaseSignOut(auth);
       toast.success('You have been signed out.');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Sign-out failed:', error);
       toast.error('Failed to sign out. Please try again.');
     }
@@ -131,17 +131,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
     
     try {
-      // Use signInWithPopup for Facebook to avoid redirect issues.
-      const result = await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle the state update, but we can show a toast here.
-      toast.success(`Welcome, ${result.user.displayName}!`);
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      // Don't show an error toast if the user cancelled the popup.
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        console.log("Facebook sign-in cancelled by user.");
-        return;
-      }
-
       console.error("Facebook sign-in error:", error);
       let description = error.message || "Could not complete the sign-in process.";
        if (error.code === 'auth/account-exists-with-different-credential') {
