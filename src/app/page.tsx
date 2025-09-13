@@ -723,14 +723,12 @@ function PageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={signInWithGoogle}
                     >
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={signInWithFacebook}
                     >
                       <FacebookIcon className="h-5 w-5 text-foreground" />
                     </Button>
@@ -738,9 +736,6 @@ function PageContent() {
                 )}
               </div>
               <SidebarMenu className="gap-3 justify-center items-center">
-                <SidebarMenuItem>
-                  <ThemeToggle />
-                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setIsFeedbackListOpen(true)}>
                     <List />
@@ -763,6 +758,11 @@ function PageContent() {
             <SidebarContent>
             </SidebarContent>
              <SidebarFooter>
+                <SidebarMenu className="gap-3 justify-center items-center">
+                    <SidebarMenuItem>
+                        <ThemeToggle />
+                    </SidebarMenuItem>
+                </SidebarMenu>
              </SidebarFooter>
           </div>
         </Sidebar>
@@ -902,3 +902,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
