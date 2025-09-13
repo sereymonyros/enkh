@@ -198,7 +198,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { user, signOut, authState } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -902,7 +902,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
