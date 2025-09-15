@@ -36,6 +36,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
+  triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
 // Create the context with a default undefined value
@@ -48,29 +49,23 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
+  const [syncTrigger, setSyncTrigger] = useState(0);
+
+  const triggerSync = useCallback(() => {
+    setSyncTrigger(count => count + 1);
+  }, []);
 
   useEffect(() => {
-    // This is the single source of truth for auth state changes from Firebase SDK.
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setAuthState({ state: 'authenticated', user });
-      } else {
-        setAuthState({ state: 'unauthenticated' });
-      }
-    });
-
-    // Handle any redirect results on startup. This runs once on app load.
-    getRedirectResult(auth)
-      .then(async (result) => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
-          // User just signed in via redirect.
           const user = result.user;
-          // Set state immediately to avoid UI flicker
           setAuthState({ state: 'authenticated', user });
-          toast.success(`Welcome back, ${user.displayName}!`);
+          toast.success(`Welcome, ${user.displayName}!`);
+          triggerSync(); // Trigger a sync after redirect login
         }
-      })
-      .catch((error) => {
+      } catch (error: any) {
         console.error("Error processing redirect result:", error);
         if (error.code === 'auth/account-exists-with-different-credential') {
           toast.error("Sign-In Failed", {
@@ -79,18 +74,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else {
           toast.error("Sign-In Error", {
             description: "There was a problem during the sign-in process."
-          })
+          });
         }
-      });
+      }
+    };
+    
+    handleRedirect();
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthState({ state: 'authenticated', user });
+      } else {
+        setAuthState({ state: 'unauthenticated' });
+      }
+    });
 
     return () => unsubscribe();
-  }, []);
+  }, [triggerSync]);
 
 
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      setAuthState({ state: 'unauthenticated' });
+      // State will be updated by onAuthStateChanged listener
       toast.success('You have been signed out.');
     } catch (error) {
       console.error('Sign-out failed:', error);
@@ -98,25 +104,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
+  const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
     try {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Google Sign-in error:", error);
-      toast.error("Sign-In Failed", {
-        description: error.message || "Could not start the sign-in process."
-      });
-    }
-  };
-
-  const signInWithFacebook = async () => {
-    const provider = new FacebookAuthProvider();
-    try {
-      // Use signInWithPopup for Facebook to avoid iframe issues in dev env.
-      const result = await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
+      console.error("Sign-in error:", error);
+       if (error.code === 'auth/popup-closed-by-user') {
         toast.info("Sign-in cancelled", {
           description: "The sign-in window was closed before completion."
         });
@@ -125,7 +118,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           description: 'An account already exists with this email. Please sign in with the original method.'
         });
       } else {
-        console.error("Facebook Sign-in error:", error);
         toast.error("Sign-In Failed", {
           description: error.message || "Could not complete the sign-in process."
         });
@@ -133,12 +125,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const signInWithGoogle = () => signInWithProvider(new GoogleAuthProvider());
+  const signInWithFacebook = () => signInWithProvider(new FacebookAuthProvider());
+
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
     authState,
     signOut,
     signInWithGoogle,
     signInWithFacebook,
+    triggerSync, // Expose the trigger
   };
 
   return (

@@ -7,7 +7,7 @@ import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCi
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
-import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId, clearHistoryForUser, mergeFirestoreHistory } from '@/lib/db';
+import { getTranslationFromDb, saveTranslationToDb, getHistoryForUser, HistoryEntry, mergeFirestoreHistory, clearHistoryForUser } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -448,22 +448,26 @@ function PageContent() {
 
   const syncAndFetchHistory = useCallback(async () => {
     if (!user || !navigator.onLine) {
-        // If offline or no user, just load whatever is in the local DB.
         console.log("SYNC: Offline or no user, loading local history.");
         await fetchLocalHistory();
         return;
     }
     try {
         console.log('SYNC: Online user detected. Starting cloud sync process...');
-        // 1. Fetch the latest history from the cloud.
+        
+        // 1. Clear local history to ensure a clean slate before syncing
+        await clearHistoryForUser(user.uid);
+        console.log('   -> Cleared local history for a clean sync.');
+
+        // 2. Fetch the latest history from the cloud.
         const firestoreHistory = await getHistory({ userId: user.uid });
         console.log(`   -> Fetched ${firestoreHistory.length} items from Firestore.`);
         
-        // 2. Merge cloud history into the local database.
+        // 3. Merge cloud history into the (now empty) local database.
         await mergeFirestoreHistory(user.uid, firestoreHistory);
         console.log('   -> Merged Firestore history into local DB.');
 
-        // 3. Refresh the UI by fetching the complete, merged history from the local DB.
+        // 4. Refresh the UI by fetching the complete, merged history from the local DB.
         await fetchLocalHistory();
         console.log('   -> UI updated with synchronized history.');
 
@@ -476,31 +480,35 @@ function PageContent() {
 
 // This effect runs when the user's authentication state changes.
 useEffect(() => {
+    // Only run sync when auth state is confirmed to be authenticated
     if (authState.state === 'authenticated') {
-        // User has logged in.
         syncAndFetchHistory();
-    } else {
-        // User has logged out.
-        setLocalHistory([]);
+    } else if (authState.state === 'unauthenticated') {
+        setLocalHistory([]); // Clear history on logout
     }
-}, [authState, syncAndFetchHistory]);
+}, [authState.state, user, syncAndFetchHistory]);
 
-// This effect sets up the real-time listener.
+
+// This effect sets up the real-time listener for subsequent updates.
 useEffect(() => {
-    if (authState.state !== 'authenticated' || !user) {
+    if (!user) {
         return () => {}; // No user, no listener.
     }
 
-    // Set up the real-time listener for any subsequent changes.
     console.log(`SYNC: Setting up real-time history listener for user ${user.uid}...`);
     const historyCollection = collection(db, 'users', user.uid, 'history');
     const q = query(historyCollection, orderBy('createdAt', 'desc'));
 
-    const unsubscribeHistory = onSnapshot(q, async (querySnapshot) => {
-        if (querySnapshot.metadata.hasPendingWrites) {
-            // Ignore events that are just local changes.
+    const unsubscribeHistory = onSnapshot(q, async (snapshot) => {
+        // hasPendingWrites is true if the snapshot includes local-only changes.
+        // We only want to sync when the change comes from the server.
+        if (snapshot.metadata.hasPendingWrites) {
+            console.log("SYNC: Ignoring local write event.");
+            // We should still refresh local history to show the user's own new translation
+            await fetchLocalHistory();
             return;
         }
+
         console.log('SYNC: Received real-time update from another device. Re-syncing...');
         // A change occurred on another device, so we re-run the full sync logic.
         await syncAndFetchHistory();
@@ -512,7 +520,7 @@ useEffect(() => {
         console.log('SYNC: Tearing down real-time history listener.');
         unsubscribeHistory();
     };
-}, [user, authState.state, syncAndFetchHistory]);
+}, [user, syncAndFetchHistory]);
 
 
   useEffect(() => {
@@ -964,5 +972,7 @@ export default function Home() {
     
 
 
+
+    
 
     
