@@ -18,17 +18,15 @@ interface EnkhDB extends DBSchema {
     indexes: { 'text-source-target': [string, string, string] };
   };
   history: {
-    key: string; // The user's UID
-    value: {
-      userId: string;
-      items: HistoryEntry[];
-    }
+    key: string; // The Firestore document ID
+    value: HistoryEntry;
+    indexes: { 'by-user': string };
   };
 }
 
 export interface HistoryEntry {
-  id: number; // Using a number for simplicity with auto-incrementing
-  firestoreId?: string; // To track the corresponding Firestore doc ID
+  id: string; // The Firestore document ID, used as the primary key.
+  userId: string;
   originalText: string;
   translatedText: string;
   sourceLanguage: 'en' | 'km';
@@ -41,8 +39,8 @@ let dbPromise: Promise<IDBPDatabase<EnkhDB>> | null = null;
 
 const getDb = (): Promise<IDBPDatabase<EnkhDB>> => {
     if (!dbPromise) {
-        dbPromise = openDB<EnkhDB>('enkh-db', 3, {
-            upgrade(db, oldVersion) {
+        dbPromise = openDB<EnkhDB>('enkh-db', 4, {
+            upgrade(db, oldVersion, newVersion, tx) {
                 if (oldVersion < 1) {
                     const translationsStore = db.createObjectStore('translations', {
                         keyPath: 'key',
@@ -58,13 +56,24 @@ const getDb = (): Promise<IDBPDatabase<EnkhDB>> => {
                         keyPath: 'userId',
                     });
                 }
-                 if (oldVersion < 3) {
+                if (oldVersion < 3) {
                     if (db.objectStoreNames.contains('history')) {
                         db.deleteObjectStore('history');
                     }
                     const historyStore = db.createObjectStore('history', {
                       keyPath: 'id',
                       autoIncrement: true,
+                    });
+                    historyStore.createIndex('by-user', 'userId');
+                }
+                if (oldVersion < 4) {
+                    // Re-create the history store to use the firestore ID as the primary key.
+                    // This is a breaking change that requires deleting old data.
+                    if (db.objectStoreNames.contains('history')) {
+                        db.deleteObjectStore('history');
+                    }
+                     const historyStore = db.createObjectStore('history', {
+                      keyPath: 'id', // Use the firestore ID as the key
                     });
                     historyStore.createIndex('by-user', 'userId');
                 }
@@ -116,28 +125,11 @@ export async function getTranslationFromDb(
 
 // --- HISTORY FUNCTIONS ---
 
-export async function addHistoryItem(userId: string, item: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<number> {
-    const db = await getDb();
-    const newEntry: Omit<HistoryEntry, 'id'> = {
-      ...item,
-      userId,
-      createdAt: Date.now(),
-    };
-    const id = await db.add('history', newEntry);
-    return id;
-}
-
-export async function updateHistoryItemWithFirestoreId(itemId: number, firestoreId: string): Promise<void> {
-    const db = await getDb();
-    const item = await db.get('history', itemId);
-    if (item) {
-        await db.put('history', { ...item, firestoreId });
-    }
-}
-
-
 export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]> {
     const db = await getDb();
+    if (!db.objectStoreNames.contains('history')) {
+        return [];
+    }
     const items = await db.getAllFromIndex('history', 'by-user', userId);
     // Sort descending by creation date
     return items.sort((a, b) => b.createdAt - a.createdAt);
@@ -145,6 +137,9 @@ export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]>
 
 export async function clearHistoryForUser(userId: string): Promise<void> {
     const db = await getDb();
+    if (!db.objectStoreNames.contains('history')) {
+        return;
+    }
     const tx = db.transaction('history', 'readwrite');
     const index = tx.store.index('by-user');
     let cursor = await index.openCursor(userId);
@@ -157,26 +152,26 @@ export async function clearHistoryForUser(userId: string): Promise<void> {
 
 export async function mergeFirestoreHistory(userId: string, firestoreHistory: HistoryEntryForClient[]): Promise<void> {
     const db = await getDb();
+    if (!db.objectStoreNames.contains('history')) {
+        return;
+    }
     const tx = db.transaction('history', 'readwrite');
+    const store = tx.objectStore('history');
 
     for (const firestoreEntry of firestoreHistory) {
-        // Check if an entry with this firestoreId already exists
-        const existing = await tx.store.get(firestoreEntry.id as any); // Assuming firestore doc ID is the key
-        
-        if (!existing) {
-             // A simplified conversion. A more robust solution might use a proper mapping.
-            const localEntry: HistoryEntry = {
-                id: firestoreEntry.id as any, // Use firestore ID as local key for simplicity if it's unique
-                firestoreId: firestoreEntry.id,
-                originalText: firestoreEntry.originalText,
-                translatedText: firestoreEntry.translatedText,
-                sourceLanguage: firestoreEntry.sourceLanguage,
-                targetLanguage: firestoreEntry.targetLanguage,
-                createdAt: firestoreEntry.createdAt, // This is already a number (millis)
-            };
-            // Use put instead of add to handle potential key conflicts gracefully
-            await tx.store.put(localEntry as any);
-        }
+        // Use the Firestore document ID as the primary key in IndexedDB
+        const localEntry: HistoryEntry = {
+            id: firestoreEntry.id,
+            userId: userId,
+            originalText: firestoreEntry.originalText,
+            translatedText: firestoreEntry.translatedText,
+            sourceLanguage: firestoreEntry.sourceLanguage,
+            targetLanguage: firestoreEntry.targetLanguage,
+            createdAt: firestoreEntry.createdAt, // This is already a number (millis)
+        };
+        // Use 'put' to either insert a new record or update an existing one.
+        // This ensures data integrity using the unique Firestore ID.
+        await store.put(localEntry);
     }
     await tx.done;
 }
