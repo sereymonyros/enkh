@@ -18,8 +18,6 @@ import {
   FacebookAuthProvider,
   getRedirectResult,
   signInWithRedirect,
-  signInWithPopup,
-  OAuthProvider,
   signInWithCustomToken as firebaseSignInWithCustomToken,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -109,6 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
     try {
+      // Force redirect for all providers to ensure consistent behavior
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Sign-in error:", error);
