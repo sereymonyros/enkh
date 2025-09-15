@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { adminAuth } from '@/lib/firebase';
+import { adminAuth } from '@/lib/firebase-admin';
 
 // TikTok API endpoints
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
