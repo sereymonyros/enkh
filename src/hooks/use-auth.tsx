@@ -72,7 +72,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthState({ state: 'authenticated', user });
-        await syncHistory(user.uid);
+        // Don't sync here immediately, let the redirect handler do it
+        // to avoid race conditions.
       } else {
         setAuthState({ state: 'unauthenticated' });
       }
@@ -80,9 +81,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Handle any redirect results on startup.
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result) => {
         if (result) {
-          toast.success(`Welcome, ${result.user.displayName}!`);
+          // User just signed in via redirect.
+          const user = result.user;
+          setAuthState({ state: 'authenticated', user });
+          toast.success(`Welcome, ${user.displayName}!`);
+          // Explicitly trigger sync after a redirect login.
+          await syncHistory(user.uid);
+        } else {
+          // This block runs on normal page loads. If there's already a user
+          // session, onAuthStateChanged will handle it.
+          if (auth.currentUser) {
+            setAuthState({ state: 'authenticated', user: auth.currentUser });
+            await syncHistory(auth.currentUser.uid);
+          }
         }
       })
       .catch((error) => {
@@ -91,6 +104,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           toast.error("Sign-In Failed", {
             description: 'An account already exists with this email. Please sign in with the original method.'
           });
+        } else {
+          toast.error("Sign-In Error", {
+            description: "There was a problem during the sign-in process."
+          })
         }
       });
 
@@ -101,6 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      setAuthState({ state: 'unauthenticated' });
       toast.success('You have been signed out.');
     } catch (error) {
       console.error('Sign-out failed:', error);
