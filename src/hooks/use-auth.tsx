@@ -17,6 +17,7 @@ import {
   FacebookAuthProvider,
   getRedirectResult,
   signInWithRedirect,
+  signInWithPopup,
   OAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -107,25 +108,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
     try {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Sign-in error:", error);
+      console.error("Google Sign-in error:", error);
       toast.error("Sign-In Failed", {
         description: error.message || "Could not start the sign-in process."
       });
     }
   };
 
-  const signInWithGoogle = () => {
-    const provider = new GoogleAuthProvider();
-    return signInWithProvider(provider);
-  };
-
-  const signInWithFacebook = () => {
+  const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
-    return signInWithProvider(provider);
+    try {
+      // Use signInWithPopup for Facebook to avoid iframe issues.
+      const result = await signInWithPopup(auth, provider);
+      toast.success(`Welcome, ${result.user.displayName}!`);
+    } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("Sign-in cancelled", {
+          description: "The sign-in window was closed before completion."
+        });
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error("Sign-In Failed", {
+          description: 'An account already exists with this email. Please sign in with the original method.'
+        });
+      } else {
+        console.error("Facebook Sign-in error:", error);
+        toast.error("Sign-In Failed", {
+          description: error.message || "Could not complete the sign-in process."
+        });
+      }
+    }
   };
 
   const value = {
