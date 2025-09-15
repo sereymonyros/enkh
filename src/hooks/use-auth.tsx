@@ -147,6 +147,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const scope = 'user.info.basic';
     const redirectUri = `${window.location.origin}/auth/tiktok/callback`;
     
+    // Store for debugging in the UI
+    sessionStorage.setItem('debug_tiktok_redirect_uri', redirectUri);
     console.log('TikTok redirect URI:', redirectUri);
 
     const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize');

@@ -194,6 +194,7 @@ function PageContent() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [debugRedirectUri, setDebugRedirectUri] = useState<string | null>(null);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -443,6 +444,14 @@ function PageContent() {
         }));
         setServerFeedback(feedbacks as any);
     });
+
+    // For debugging: check for the redirect URI in sessionStorage
+    const debugUri = sessionStorage.getItem('debug_tiktok_redirect_uri');
+    if (debugUri) {
+        setDebugRedirectUri(debugUri);
+        // Optional: clear it after reading so it doesn't persist
+        // sessionStorage.removeItem('debug_tiktok_redirect_uri');
+    }
 
     return () => unsubscribeFeedback();
   }, [setServerFeedback]);
@@ -885,6 +894,12 @@ useEffect(() => {
         )}>
              <div className="w-full pointer-events-auto">
                 <WelcomeMessage user={user} />
+                {debugRedirectUri && (
+                    <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
+                        <p className="font-bold">Debug Redirect URI:</p>
+                        <p>{debugRedirectUri}</p>
+                    </div>
+                )}
                 <InputArea
                     textareaRef={textareaRef}
                     inputText={inputText}
@@ -1001,6 +1016,7 @@ export default function Home() {
     
 
     
+
 
 
 
