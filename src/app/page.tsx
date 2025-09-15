@@ -796,7 +796,7 @@ useEffect(() => {
                       size="icon"
                       onClick={signInWithFacebook}
                     >
-                      <FacebookIcon className="h-5 w-5 text-foreground" />
+                      <FacebookIcon className="h-5 w-5" />
                     </Button>
                   </>
                 )}
