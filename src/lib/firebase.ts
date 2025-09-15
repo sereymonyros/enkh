@@ -2,6 +2,7 @@
 import {initializeApp, getApp, getApps} from 'firebase/app';
 import {getFirestore, enableIndexedDbPersistence} from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import admin from 'firebase-admin';
 
 // Your web app's Firebase configuration
 // This configuration is PUBLIC and safe to expose in client-side code.
@@ -15,27 +16,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-
-// Initialize Firebase
-// This pattern prevents re-initializing the app on every hot-reload.
+// Initialize Firebase for the client
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 
 // Enable offline persistence.
-// This must be done after initializing Firestore.
-// We wrap it in a try-catch block to handle potential errors,
-// such as when multiple browser tabs are open.
 try {
     enableIndexedDbPersistence(db)
       .catch((err) => {
         if (err.code == 'failed-precondition') {
-            // Multiple tabs open, persistence can only be enabled in one tab at a time.
             console.warn('Firestore persistence failed: multiple tabs open.');
         } else if (err.code == 'unimplemented') {
-            // The current browser does not support all of the
-            // features required to enable persistence
             console.warn('Firestore persistence not available in this browser.');
         }
     });
@@ -43,5 +36,21 @@ try {
     console.error("Error enabling Firestore persistence:", error);
 }
 
+// Initialize Firebase Admin SDK for the server
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : null;
 
-export {app, db, auth};
+if (serviceAccount && !admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  } catch (error) {
+    console.error('Firebase Admin initialization error:', error);
+  }
+}
+
+const adminAuth = admin.apps.length ? admin.auth() : null;
+
+export {app, db, auth, adminAuth};

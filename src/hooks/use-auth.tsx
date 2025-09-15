@@ -20,6 +20,7 @@ import {
   signInWithRedirect,
   signInWithPopup,
   OAuthProvider,
+  signInWithCustomToken as firebaseSignInWithCustomToken,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -37,6 +38,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
   signInWithTikTok: () => Promise<void>;
+  signInWithCustomToken: (token: string) => Promise<void>;
   triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
@@ -157,6 +159,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     window.location.href = authUrl.toString();
   };
 
+  const signInWithCustomToken = useCallback(async (token: string) => {
+    try {
+      const userCredential = await firebaseSignInWithCustomToken(auth, token);
+      const user = userCredential.user;
+      setAuthState({ state: 'authenticated', user });
+      toast.success(`Welcome, ${user.displayName || 'TikTok User'}!`);
+      triggerSync();
+    } catch (error) {
+      console.error('Error signing in with custom token:', error);
+      toast.error('Sign-in failed.', {
+        description: 'There was a problem signing in with the provided credentials.',
+      });
+    }
+  }, [triggerSync]);
+
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
     authState,
@@ -164,6 +181,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithGoogle,
     signInWithFacebook,
     signInWithTikTok,
+    signInWithCustomToken,
     triggerSync, // Expose the trigger
   };
 

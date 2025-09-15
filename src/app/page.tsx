@@ -191,7 +191,7 @@ function PageContent() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
-  const [isFeedbackOpen, setIsFeedbackOpen]  = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
@@ -201,7 +201,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithFacebook, signInWithTikTok } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithFacebook, signInWithTikTok, signInWithCustomToken } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -543,6 +543,23 @@ useEffect(() => {
     // Update the ref to the current user for the next render.
     prevUserRef.current = user;
   }, [user, setOpenMobile]);
+
+  // Handle TikTok custom token sign-in
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const error = urlParams.get('error');
+
+    if (error) {
+      toast.error("TikTok Sign-In Failed", { description: error });
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (token) {
+      signInWithCustomToken(token);
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [signInWithCustomToken]);
 
 
   if (authState.state === 'loading') {
@@ -984,6 +1001,7 @@ export default function Home() {
     
 
     
+
 
 
 
