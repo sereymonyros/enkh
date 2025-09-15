@@ -61,6 +61,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { getHistory } from '@/ai/flows/get-history';
+import { TikTokIcon } from '@/components/icons/tiktok-icon';
 
 
 // Define a type for a single history entry
@@ -798,6 +799,12 @@ useEffect(() => {
                     >
                       <FacebookIcon className="h-5 w-5" />
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                    >
+                      <TikTokIcon className="h-5 w-5" />
+                    </Button>
                   </>
                 )}
               </div>
@@ -976,4 +983,5 @@ export default function Home() {
     
 
     
+
 
