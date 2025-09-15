@@ -155,7 +155,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     authUrl.searchParams.append('state', state);
 
     // Redirect the user to the TikTok authorization page
-    window.top.location.href = authUrl.toString();
+    window.location.href = authUrl.toString();
   };
 
   const signInWithCustomToken = useCallback(async (token: string) => {
