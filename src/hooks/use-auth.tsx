@@ -141,9 +141,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
     try {
-      // Use signInWithPopup for Facebook to avoid iframe issues.
+      // Use signInWithPopup for Facebook to avoid iframe issues in dev env.
       const result = await signInWithPopup(auth, provider);
-      toast.success(`Welcome, ${result.user.displayName}!`);
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
         toast.info("Sign-in cancelled", {
