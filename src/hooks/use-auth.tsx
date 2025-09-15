@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -50,36 +51,37 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
 
-  const syncHistory = useCallback(async (uid: string) => {
+  const syncHistoryOnLogin = useCallback(async (uid: string) => {
     if (!navigator.onLine) {
-      console.log("Offline: Skipping history sync.");
+      console.log("Offline: Skipping history sync on login.");
       return;
     }
     try {
-      console.log('Starting history sync...');
+      console.log('SYNC: Starting one-time history sync on login...');
       const firestoreHistory = await getHistory({ userId: uid });
       if (firestoreHistory) {
         await mergeFirestoreHistory(uid, firestoreHistory);
-        console.log('History sync completed successfully.');
+        console.log('SYNC: One-time history sync completed successfully.');
       }
     } catch (error) {
-      console.error("History sync failed:", error);
+      console.error("SYNC: One-time history sync failed:", error);
     }
   }, []);
 
   useEffect(() => {
-    // This is the single source of truth for auth state.
+    // This is the single source of truth for auth state changes from Firebase SDK.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setAuthState({ state: 'authenticated', user });
-        // Don't sync here immediately, let the redirect handler do it
-        // to avoid race conditions.
+        // The real-time listener in page.tsx will handle ongoing sync.
+        // We sync here as a fallback for the initial login.
+        await syncHistoryOnLogin(user.uid);
       } else {
         setAuthState({ state: 'unauthenticated' });
       }
     });
 
-    // Handle any redirect results on startup.
+    // Handle any redirect results on startup. This runs once on app load.
     getRedirectResult(auth)
       .then(async (result) => {
         if (result) {
@@ -87,15 +89,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const user = result.user;
           setAuthState({ state: 'authenticated', user });
           toast.success(`Welcome, ${user.displayName}!`);
-          // Explicitly trigger sync after a redirect login.
-          await syncHistory(user.uid);
-        } else {
-          // This block runs on normal page loads. If there's already a user
-          // session, onAuthStateChanged will handle it.
-          if (auth.currentUser) {
-            setAuthState({ state: 'authenticated', user: auth.currentUser });
-            await syncHistory(auth.currentUser.uid);
-          }
+          // Explicitly trigger a full sync after a redirect login.
+          await syncHistoryOnLogin(user.uid);
         }
       })
       .catch((error) => {
@@ -112,7 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
     return () => unsubscribe();
-  }, [syncHistory]);
+  }, [syncHistoryOnLogin]);
 
 
   const signOut = async () => {

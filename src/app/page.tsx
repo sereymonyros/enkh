@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -6,7 +7,7 @@ import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCi
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
-import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId, clearHistoryForUser } from '@/lib/db';
+import { getTranslationFromDb, saveTranslationToDb, addHistoryItem, getHistoryForUser, HistoryEntry, updateHistoryItemWithFirestoreId, clearHistoryForUser, mergeFirestoreHistory } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,7 +33,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle';
 import { FeedbackForm } from '@/components/feedback-form';
 import { CacheWarmer } from '@/components/cache-warmer';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useFeedbackStore } from '@/lib/feedback-store';
 import { FeedbackTable } from '@/components/feedback-table';
@@ -357,15 +358,11 @@ function PageContent() {
         const localId = await addHistoryItem(historyData);
         
         // After, sync to the cloud in the background.
-        saveHistory(historyData).then(response => {
-            // After successful sync, update the local item with its Firestore ID.
-            updateHistoryItemWithFirestoreId(localId, response.documentId);
-        }).catch(err => {
+        // The real-time listener will handle updating the local UI.
+        saveHistory(historyData).catch(err => {
             console.error("Failed to sync history to cloud:", err);
+            // Optionally, update the local item to show it hasn't been synced.
         });
-        
-        // Then, refresh the history displayed in the UI.
-        await fetchHistory();
       }
 
       const aiMessage: HistoryItem = {
@@ -440,7 +437,7 @@ function PageContent() {
     // Listen for real-time updates from Firestore for feedback
     const feedbacksCollection = collection(db, 'feedbacks');
     const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeFeedback = onSnapshot(q, (querySnapshot) => {
         const feedbacks = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
@@ -448,15 +445,48 @@ function PageContent() {
         setServerFeedback(feedbacks as any);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeFeedback();
   }, [setServerFeedback]);
 
   useEffect(() => {
-    // When the user changes (e.g., on login/logout), refetch the history.
-    if (authState.state !== 'loading') {
-      fetchHistory();
+    if (authState.state !== 'authenticated' || !user) {
+      setLocalHistory([]);
+      return () => {}; // Return an empty cleanup function if no user
     }
-  }, [user, authState, fetchHistory]);
+
+    // Set up the real-time listener for history.
+    console.log(`SYNC: Setting up real-time history listener for user ${user.uid}...`);
+    const historyCollection = collection(db, 'users', user.uid, 'history');
+    const q = query(historyCollection, orderBy('createdAt', 'desc'));
+
+    const unsubscribeHistory = onSnapshot(q, async (querySnapshot) => {
+      console.log('SYNC: Received real-time history update from Firestore.');
+      const firestoreHistory = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          originalText: data.originalText,
+          translatedText: data.translatedText,
+          sourceLanguage: data.sourceLanguage,
+          targetLanguage: data.targetLanguage,
+          createdAt: (data.createdAt as Timestamp).toMillis(),
+        };
+      });
+
+      // Merge the new data into IndexedDB.
+      await mergeFirestoreHistory(user.uid, firestoreHistory);
+      // After merging, refresh the UI by fetching from the local DB.
+      await fetchHistory();
+    }, (error) => {
+      console.error("SYNC: Real-time history listener error:", error);
+    });
+
+    // Cleanup function to unsubscribe when the component unmounts or the user changes.
+    return () => {
+      console.log('SYNC: Tearing down real-time history listener.');
+      unsubscribeHistory();
+    };
+  }, [user, authState.state, fetchHistory]);
 
 
   useEffect(() => {
@@ -882,7 +912,7 @@ setIsFeedbackOpen(false);
                             <p className="font-semibold truncate">{item.originalText}</p>
                             <p className="text-sm text-muted-foreground truncate">{item.translatedText}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {formatDistanceToNow(item.createdAt, { addSuffix: true })}
+                                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                             </p>
                         </button>
                     ))
@@ -906,3 +936,4 @@ export default function Home() {
 }
 
     
+
