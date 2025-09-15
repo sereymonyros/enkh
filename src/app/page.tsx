@@ -198,7 +198,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -723,12 +723,14 @@ function PageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={signInWithGoogle}
                     >
                       <GoogleIcon className="h-5 w-5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={signInWithFacebook}
                     >
                       <FacebookIcon className="h-5 w-5 text-foreground" />
                     </Button>
