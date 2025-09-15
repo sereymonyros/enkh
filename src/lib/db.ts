@@ -1,108 +1,97 @@
 
 'use client';
-// This file manages all interactions with the browser's built-in IndexedDB database.
-// It uses the 'idb' library, which is a small wrapper that makes IndexedDB easier to use.
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { HistoryEntryForClient } from '@/ai/flows/get-history';
 
-// Define constants for the database. This avoids magic strings in the code.
-const DB_NAME = 'enkh-db'; // The name of our database.
-const DB_VERSION = 3; // The version of our database schema.
-const TRANSLATIONS_STORE_NAME = 'translations'; // The name of the "table" (called an object store) inside the DB.
-const HISTORY_STORE_NAME = 'history';
-
-// Define the structure of a single record (a translation entry) in our database.
-// This is for TypeScript, to ensure type safety.
-interface TranslationEntry {
-  normalizedText: string;
-  sourceLanguage: 'en' | 'km';
-  targetLanguage: 'en' | 'km';
-  translatedText: string;
-  createdAt: Date;
+// Define the schema for our database.
+interface EnkhDB extends DBSchema {
+  translations: {
+    key: string;
+    value: {
+      normalizedText: string;
+      sourceLanguage: 'en' | 'km';
+      targetLanguage: 'en' | 'km';
+      translatedText: string;
+      createdAt: Date;
+    };
+    indexes: { 'text-source-target': [string, string, string] };
+  };
+  history: {
+    key: string; // The user's UID
+    value: {
+      userId: string;
+      items: HistoryEntry[];
+    }
+  };
 }
 
 export interface HistoryEntry {
-  id?: number; // Local auto-incrementing ID
-  firestoreId?: string; // ID from Firestore for syncing
-  userId: string;
+  id: number; // Using a number for simplicity with auto-incrementing
+  firestoreId?: string; // To track the corresponding Firestore doc ID
   originalText: string;
   translatedText: string;
   sourceLanguage: 'en' | 'km';
   targetLanguage: 'en' | 'km';
-  createdAt: Date;
+  createdAt: number; // Store as timestamp (milliseconds)
 }
 
-
-// Define the entire database schema, including all its object stores and their indexes.
-interface EnkhDB extends DBSchema {
-  [TRANSLATIONS_STORE_NAME]: {
-    key: [string, 'en' | 'km', 'en' | 'km'];
-    value: TranslationEntry;
-    indexes: { 'by-query': [string, 'en' | 'km', 'en' | 'km'] };
-  };
-  [HISTORY_STORE_NAME]: {
-    key: number;
-    value: HistoryEntry;
-    indexes: { 'by-user': string; 'by-firestore-id': string };
-  };
-}
 
 let dbPromise: Promise<IDBPDatabase<EnkhDB>> | null = null;
 
-const getDb = () => {
-  if (!dbPromise) {
-    dbPromise = openDB<EnkhDB>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, newVersion, transaction) {
-        // Runs when the schema needs to be created or updated.
-        if (oldVersion < 1) {
-            const translationsStore = db.createObjectStore(TRANSLATIONS_STORE_NAME, {
-                keyPath: ['normalizedText', 'sourceLanguage', 'targetLanguage'],
-            });
-            translationsStore.createIndex('by-query', ['normalizedText', 'sourceLanguage', 'targetLanguage']);
-        }
-        if (oldVersion < 2) {
-            const historyStore = db.createObjectStore(HISTORY_STORE_NAME, {
-                keyPath: 'id',
-                autoIncrement: true,
-            });
-            historyStore.createIndex('by-user', 'userId');
-        }
-        if (oldVersion < 3) {
-            const historyStore = transaction.objectStore(HISTORY_STORE_NAME);
-            // Add an index for the Firestore ID to easily check for existing items during sync.
-            historyStore.createIndex('by-firestore-id', 'firestoreId');
-        }
-      },
-    });
-  }
-  return dbPromise;
-}
+const getDb = (): Promise<IDBPDatabase<EnkhDB>> => {
+    if (!dbPromise) {
+        dbPromise = openDB<EnkhDB>('enkh-db', 3, {
+            upgrade(db, oldVersion) {
+                if (oldVersion < 1) {
+                    const translationsStore = db.createObjectStore('translations', {
+                        keyPath: 'key',
+                    });
+                    translationsStore.createIndex('text-source-target', [
+                        'normalizedText',
+                        'sourceLanguage',
+                        'targetLanguage',
+                    ]);
+                }
+                if (oldVersion < 2) {
+                     db.createObjectStore('history', {
+                        keyPath: 'userId',
+                    });
+                }
+                 if (oldVersion < 3) {
+                    if (db.objectStoreNames.contains('history')) {
+                        db.deleteObjectStore('history');
+                    }
+                    const historyStore = db.createObjectStore('history', {
+                      keyPath: 'id',
+                      autoIncrement: true,
+                    });
+                    historyStore.createIndex('by-user', 'userId');
+                }
+            },
+        });
+    }
+    return dbPromise;
+};
 
-/**
- * Retrieves a single translation from the public local cache.
- */
-export async function getTranslationFromDb(
-  normalizedText: string,
-  sourceLanguage: 'en' | 'km',
-  targetLanguage: 'en' | 'km'
-): Promise<TranslationEntry | null> {
-  const db = await getDb();
-  const result = await db.get(TRANSLATIONS_STORE_NAME, [normalizedText, sourceLanguage, targetLanguage]);
-  return result ?? null;
-}
 
-/**
- * Saves or updates a translation in the public local cache.
- */
+const normalizeText = (text: string) => {
+  return text.trim().toLowerCase();
+};
+
 export async function saveTranslationToDb(
-  normalizedText: string,
+  originalText: string,
   sourceLanguage: 'en' | 'km',
   targetLanguage: 'en' | 'km',
   translatedText: string
 ): Promise<void> {
   const db = await getDb();
-  await db.put(TRANSLATIONS_STORE_NAME, {
-    normalizedText,
+  const normalizedOriginal = normalizeText(originalText);
+  const key = `${normalizedOriginal}:${sourceLanguage}:${targetLanguage}`;
+
+  await db.put('translations', {
+    key,
+    normalizedText: normalizedOriginal,
     sourceLanguage,
     targetLanguage,
     translatedText,
@@ -110,140 +99,84 @@ export async function saveTranslationToDb(
   });
 }
 
-/**
- * Adds a new entry to the user's private translation history.
- * @param item The history item to add. The userId must be set.
- */
-export async function addHistoryItem(item: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<number> {
+export async function getTranslationFromDb(
+  originalText: string,
+  sourceLanguage: 'en' | 'km',
+  targetLanguage: 'en' | 'km'
+): Promise<{ translatedText: string; createdAt: Date } | null> {
+  const db = await getDb();
+  const normalizedOriginal = normalizeText(originalText);
+  const key = `${normalizedOriginal}:${sourceLanguage}:${targetLanguage}`;
+  
+  const result = await db.get('translations', key);
+
+  return result ? { translatedText: result.translatedText, createdAt: result.createdAt } : null;
+}
+
+
+// --- HISTORY FUNCTIONS ---
+
+export async function addHistoryItem(userId: string, item: Omit<HistoryEntry, 'id' | 'createdAt'>): Promise<number> {
     const db = await getDb();
-    const newEntry: HistoryEntry = {
-        ...item,
-        createdAt: new Date(),
-    }
-    const id = await db.add(HISTORY_STORE_NAME, newEntry);
+    const newEntry: Omit<HistoryEntry, 'id'> = {
+      ...item,
+      userId,
+      createdAt: Date.now(),
+    };
+    const id = await db.add('history', newEntry);
     return id;
 }
 
-
-/**
- * Retrieves a de-duplicated list of translation history for a specific user.
- * If multiple entries for the same original text exist, only the most recent one is returned.
- * @param userId The UID of the user.
- * @returns A de-duplicated array of history entries, sorted from newest to oldest.
- */
-export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]> {
+export async function updateHistoryItemWithFirestoreId(itemId: number, firestoreId: string): Promise<void> {
     const db = await getDb();
-    const allItems = await db.getAllFromIndex(HISTORY_STORE_NAME, 'by-user', userId);
-
-    // Sort all items by date, newest first.
-    const sortedItems = allItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    // De-duplicate the items, keeping only the most recent for each originalText.
-    const uniqueItems = new Map<string, HistoryEntry>();
-    for (const item of sortedItems) {
-        const normalizedOriginalText = item.originalText.toLowerCase().trim();
-        if (!uniqueItems.has(normalizedOriginalText)) {
-            uniqueItems.set(normalizedOriginalText, item);
-        }
+    const item = await db.get('history', itemId);
+    if (item) {
+        await db.put('history', { ...item, firestoreId });
     }
-
-    // The map now holds the most recent unique entries. Convert it back to an array
-    // and sort it one last time to ensure the final order is correct.
-    return Array.from(uniqueItems.values()).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 
-/**
- * Merges history from Firestore into the local IndexedDB, avoiding duplicates.
- * This is a robust function to prevent race conditions and duplicate entries.
- * @param userId The UID of the user.
- * @param firestoreHistory The array of history items fetched from Firestore.
- */
-export async function mergeFirestoreHistory(userId: string, firestoreHistory: any[]): Promise<void> {
+export async function getHistoryForUser(userId: string): Promise<HistoryEntry[]> {
     const db = await getDb();
-    const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(HISTORY_STORE_NAME);
+    const items = await db.getAllFromIndex('history', 'by-user', userId);
+    // Sort descending by creation date
+    return items.sort((a, b) => b.createdAt - a.createdAt);
+}
 
-    for (const remoteItem of firestoreHistory) {
-        if (!remoteItem.id) continue; // Skip items without a firestore ID
-
-        // 1. Check if a record with this Firestore ID already exists.
-        const existingById = await store.index('by-firestore-id').get(remoteItem.id);
-        if (existingById) {
-            continue; // Record is already synced. Do nothing.
-        }
-
-        // 2. If not found by ID, search for a local-only "pending" record that matches the content.
-        // This handles the race condition where a local record was created but not yet updated with the Firestore ID.
-        let matchFound = false;
-        const allLocalItems = await store.index('by-user').getAll(userId);
-        
-        for (const localItem of allLocalItems) {
-            // A "pending" record has no firestoreId and should match content.
-            if (!localItem.firestoreId &&
-                localItem.originalText === remoteItem.originalText &&
-                localItem.translatedText === remoteItem.translatedText
-            ) {
-                // We found a matching local record. Update it with the Firestore ID.
-                localItem.firestoreId = remoteItem.id;
-                // It's good practice to use the server's timestamp as the source of truth.
-                localItem.createdAt = new Date(remoteItem.createdAt); 
-                await store.put(localItem);
-                matchFound = true;
-                break; // Stop searching once a match is found and updated for this remoteItem.
-            }
-        }
-        
-        // 3. If no match was found by ID or by content, add it as a new record.
-        // This means it's a genuinely new record from another device.
-        if (!matchFound) {
-            await store.add({
-                userId: userId,
-                firestoreId: remoteItem.id,
-                originalText: remoteItem.originalText,
-                translatedText: remoteItem.translatedText,
-                sourceLanguage: remoteItem.sourceLanguage,
-                targetLanguage: remoteItem.targetLanguage,
-                createdAt: new Date(remoteItem.createdAt),
-            });
-        }
+export async function clearHistoryForUser(userId: string): Promise<void> {
+    const db = await getDb();
+    const tx = db.transaction('history', 'readwrite');
+    const index = tx.store.index('by-user');
+    let cursor = await index.openCursor(userId);
+    while (cursor) {
+        await cursor.delete();
+        cursor = await cursor.continue();
     }
-    
     await tx.done;
 }
 
-
-/**
- * Associates a local history item with its new Firestore ID after a successful sync.
- */
-export async function updateHistoryItemWithFirestoreId(localId: number, firestoreId: string): Promise<void> {
+export async function mergeFirestoreHistory(userId: string, firestoreHistory: HistoryEntryForClient[]): Promise<void> {
     const db = await getDb();
-    const item = await db.get(HISTORY_STORE_NAME, localId);
-    if (item) {
-        // Avoid overwriting if another process (like merge) already set the ID.
-        if (!item.firestoreId) {
-            item.firestoreId = firestoreId;
-            await db.put(HISTORY_STORE_NAME, item);
+    const tx = db.transaction('history', 'readwrite');
+
+    for (const firestoreEntry of firestoreHistory) {
+        // Check if an entry with this firestoreId already exists
+        const existing = await tx.store.get(firestoreEntry.id as any); // Assuming firestore doc ID is the key
+        
+        if (!existing) {
+             // A simplified conversion. A more robust solution might use a proper mapping.
+            const localEntry: HistoryEntry = {
+                id: firestoreEntry.id as any, // Use firestore ID as local key for simplicity if it's unique
+                firestoreId: firestoreEntry.id,
+                originalText: firestoreEntry.originalText,
+                translatedText: firestoreEntry.translatedText,
+                sourceLanguage: firestoreEntry.sourceLanguage,
+                targetLanguage: firestoreEntry.targetLanguage,
+                createdAt: firestoreEntry.createdAt, // This is already a number (millis)
+            };
+            // Use put instead of add to handle potential key conflicts gracefully
+            await tx.store.put(localEntry as any);
         }
     }
+    await tx.done;
 }
-
-/**
- * Clears all history entries for a specific user from the local IndexedDB.
- * @param userId The UID of the user whose history will be cleared.
- */
-export async function clearHistoryForUser(userId: string): Promise<void> {
-  const db = await getDb();
-  const tx = db.transaction(HISTORY_STORE_NAME, 'readwrite');
-  const store = tx.objectStore(HISTORY_STORE_NAME);
-  const index = store.index('by-user');
-  let cursor = await index.openCursor(userId);
-  while (cursor) {
-    await store.delete(cursor.primaryKey);
-    cursor = await cursor.continue();
-  }
-  await tx.done;
-  console.log(`Cleared local history for user: ${userId}`);
-}
-
-    

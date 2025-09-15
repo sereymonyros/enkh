@@ -60,6 +60,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { getHistory } from '@/ai/flows/get-history';
 
 
 // Define a type for a single history entry
@@ -210,7 +211,7 @@ function PageContent() {
     }
   };
 
-  const fetchHistory = useCallback(async () => {
+  const fetchLocalHistory = useCallback(async () => {
     if (!user) {
         setLocalHistory([]);
         return;
@@ -354,14 +355,12 @@ function PageContent() {
             sourceLanguage: sourceLang,
             targetLanguage: targetLang,
         };
-        // Save to local DB first and get the local ID.
-        const localId = await addHistoryItem(historyData);
         
-        // After, sync to the cloud in the background.
-        // The real-time listener will handle updating the local UI.
+        // This flow saves to Firestore and triggers the real-time listener,
+        // which will then update the local DB and UI.
         saveHistory(historyData).catch(err => {
             console.error("Failed to sync history to cloud:", err);
-            // Optionally, update the local item to show it hasn't been synced.
+            // Optionally, save to local DB directly as a fallback for offline.
         });
       }
 
@@ -417,13 +416,13 @@ function PageContent() {
       setEditedText("");
       setHistoryBeforeEdit(null);
     }
-  }, [hasStarted, historyBeforeEdit, user, fetchHistory]);
+  }, [hasStarted, historyBeforeEdit, user]);
 
   const handleClearHistory = async () => {
     if (!user) return;
     try {
       await clearHistoryForUser(user.uid);
-      await fetchHistory(); // Refresh the history list from the DB (it will be empty)
+      await fetchLocalHistory(); // Refresh the history list from the DB (it will be empty)
       toast.success("Local history has been cleared.");
     } catch (error) {
       console.error("Failed to clear history:", error);
@@ -434,7 +433,6 @@ function PageContent() {
   useEffect(() => {
     seedDatabaseIfNeeded();
     
-    // Listen for real-time updates from Firestore for feedback
     const feedbacksCollection = collection(db, 'feedbacks');
     const q = query(feedbacksCollection, orderBy('createdAt', 'desc'));
     const unsubscribeFeedback = onSnapshot(q, (querySnapshot) => {
@@ -448,45 +446,73 @@ function PageContent() {
     return () => unsubscribeFeedback();
   }, [setServerFeedback]);
 
-  useEffect(() => {
+  const syncAndFetchHistory = useCallback(async () => {
+    if (!user || !navigator.onLine) {
+        // If offline or no user, just load whatever is in the local DB.
+        console.log("SYNC: Offline or no user, loading local history.");
+        await fetchLocalHistory();
+        return;
+    }
+    try {
+        console.log('SYNC: Online user detected. Starting cloud sync process...');
+        // 1. Fetch the latest history from the cloud.
+        const firestoreHistory = await getHistory({ userId: user.uid });
+        console.log(`   -> Fetched ${firestoreHistory.length} items from Firestore.`);
+        
+        // 2. Merge cloud history into the local database.
+        await mergeFirestoreHistory(user.uid, firestoreHistory);
+        console.log('   -> Merged Firestore history into local DB.');
+
+        // 3. Refresh the UI by fetching the complete, merged history from the local DB.
+        await fetchLocalHistory();
+        console.log('   -> UI updated with synchronized history.');
+
+    } catch (error) {
+        console.error("SYNC: Full sync process failed:", error);
+        // Fallback to local history if cloud sync fails.
+        await fetchLocalHistory();
+    }
+}, [user, fetchLocalHistory]);
+
+// This effect runs when the user's authentication state changes.
+useEffect(() => {
+    if (authState.state === 'authenticated') {
+        // User has logged in.
+        syncAndFetchHistory();
+    } else {
+        // User has logged out.
+        setLocalHistory([]);
+    }
+}, [authState, syncAndFetchHistory]);
+
+// This effect sets up the real-time listener.
+useEffect(() => {
     if (authState.state !== 'authenticated' || !user) {
-      setLocalHistory([]);
-      return () => {}; // Return an empty cleanup function if no user
+        return () => {}; // No user, no listener.
     }
 
-    // Set up the real-time listener for history.
+    // Set up the real-time listener for any subsequent changes.
     console.log(`SYNC: Setting up real-time history listener for user ${user.uid}...`);
     const historyCollection = collection(db, 'users', user.uid, 'history');
     const q = query(historyCollection, orderBy('createdAt', 'desc'));
 
     const unsubscribeHistory = onSnapshot(q, async (querySnapshot) => {
-      console.log('SYNC: Received real-time history update from Firestore.');
-      const firestoreHistory = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          originalText: data.originalText,
-          translatedText: data.translatedText,
-          sourceLanguage: data.sourceLanguage,
-          targetLanguage: data.targetLanguage,
-          createdAt: (data.createdAt as Timestamp).toMillis(),
-        };
-      });
-
-      // Merge the new data into IndexedDB.
-      await mergeFirestoreHistory(user.uid, firestoreHistory);
-      // After merging, refresh the UI by fetching from the local DB.
-      await fetchHistory();
+        if (querySnapshot.metadata.hasPendingWrites) {
+            // Ignore events that are just local changes.
+            return;
+        }
+        console.log('SYNC: Received real-time update from another device. Re-syncing...');
+        // A change occurred on another device, so we re-run the full sync logic.
+        await syncAndFetchHistory();
     }, (error) => {
-      console.error("SYNC: Real-time history listener error:", error);
+        console.error("SYNC: Real-time history listener error:", error);
     });
 
-    // Cleanup function to unsubscribe when the component unmounts or the user changes.
     return () => {
-      console.log('SYNC: Tearing down real-time history listener.');
-      unsubscribeHistory();
+        console.log('SYNC: Tearing down real-time history listener.');
+        unsubscribeHistory();
     };
-  }, [user, authState.state, fetchHistory]);
+}, [user, authState.state, syncAndFetchHistory]);
 
 
   useEffect(() => {
@@ -937,3 +963,6 @@ export default function Home() {
 
     
 
+
+
+    

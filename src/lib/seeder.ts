@@ -2,7 +2,7 @@
 // "Seeding" means populating the database with an initial set of data.
 'use client'; // This directive is crucial. It ensures this code only runs in the browser.
 
-import { saveTranslationToDb } from './db';
+import { saveTranslationToDb } from '@/lib/db';
 import { seedData } from './seed-data';
 
 // Define a key for localStorage. Using a constant prevents typos.
