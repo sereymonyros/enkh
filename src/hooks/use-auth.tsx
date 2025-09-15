@@ -17,7 +17,6 @@ import {
   FacebookAuthProvider,
   getRedirectResult,
   signInWithRedirect,
-  signInWithPopup,
   OAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -108,34 +107,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
+  const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
     try {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
-      toast.error("Google Sign-In Failed", {
+      console.error("Sign-in error:", error);
+      toast.error("Sign-In Failed", {
         description: error.message || "Could not start the sign-in process."
       });
     }
   };
 
-  const signInWithFacebook = async () => {
+  const signInWithGoogle = () => {
+    const provider = new GoogleAuthProvider();
+    return signInWithProvider(provider);
+  };
+
+  const signInWithFacebook = () => {
     const provider = new FacebookAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.error("Facebook sign-in error:", error);
-      let description = error.message || "Could not complete the sign-in process.";
-      if (error.code === 'auth/popup-blocked') {
-        description = "The sign-in popup was blocked by your browser. Please allow popups for this site and try again."
-      } else if (error.code === 'auth/account-exists-with-different-credential') {
-        description = 'An account already exists with this email address. Please sign in with the original method.'
-      }
-      toast.error("Facebook Sign-In Failed", {
-        description: description,
-      });
-    }
+    return signInWithProvider(provider);
   };
 
   const value = {
@@ -161,5 +151,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
