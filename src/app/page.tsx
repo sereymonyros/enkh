@@ -191,7 +191,7 @@ function PageContent() {
   const [editingItemId, setEditingItemId] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
   const [historyBeforeEdit, setHistoryBeforeEdit] = useState<HistoryItem[] | null>(null);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen]  = useState(false);
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   
@@ -201,7 +201,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { user, signOut, authState, signInWithGoogle, signInWithFacebook, signInWithTikTok } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -802,6 +802,7 @@ useEffect(() => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={signInWithTikTok}
                     >
                       <TikTokIcon className="h-5 w-5" />
                     </Button>
@@ -983,5 +984,6 @@ export default function Home() {
     
 
     
+
 
 

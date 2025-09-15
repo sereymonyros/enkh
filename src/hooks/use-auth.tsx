@@ -36,6 +36,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
+  signInWithTikTok: () => Promise<void>;
   triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
@@ -127,6 +128,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = () => signInWithProvider(new GoogleAuthProvider());
   const signInWithFacebook = () => signInWithProvider(new FacebookAuthProvider());
+  
+  const signInWithTikTok = async () => {
+    const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
+    if (!clientKey) {
+      toast.error("TikTok login is not configured.", {
+        description: "The TikTok client key is missing.",
+      });
+      return;
+    }
+    
+    // Generate a random string for the state parameter for security (CSRF protection)
+    const state = Math.random().toString(36).substring(2);
+    // Store the state in sessionStorage to verify it on callback
+    sessionStorage.setItem('tiktok_auth_state', state);
+
+    const scope = 'user.info.basic';
+    const redirectUri = `${window.location.origin}/auth/tiktok/callback`;
+    
+    const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize');
+    authUrl.searchParams.append('client_key', clientKey);
+    authUrl.searchParams.append('scope', scope);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('state', state);
+
+    // Redirect the user to the TikTok authorization page
+    window.location.href = authUrl.toString();
+  };
 
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
@@ -134,6 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     signInWithGoogle,
     signInWithFacebook,
+    signInWithTikTok,
     triggerSync, // Expose the trigger
   };
 
@@ -152,5 +182,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
