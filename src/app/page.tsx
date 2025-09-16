@@ -938,10 +938,11 @@ useEffect(() => {
                   </button>
                 ) : (
                   <>
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center gap-4">
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="text-blue-400"
                           onClick={signInWithGoogle}
                         >
                           <GoogleIcon className="h-5 w-5" />
@@ -950,10 +951,11 @@ useEffect(() => {
                           variant="ghost"
                           size="icon"
                           onClick={signInWithFacebook}
+                          className="hidden"
                         >
                           <FacebookIcon className="h-5 w-5" />
                         </Button>
-                        <a href="/auth/tiktok/redirect">
+                        <a href="/auth/tiktok/redirect" className="hidden">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -964,6 +966,7 @@ useEffect(() => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="text-blue-400"
                           onClick={() => setIsPhoneAuthOpen(true)}
                         >
                           <PhoneIcon className="h-5 w-5" />
@@ -1169,5 +1172,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
