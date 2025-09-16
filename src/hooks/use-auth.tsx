@@ -31,6 +31,11 @@ export type AuthState =
   | { state: 'unauthenticated' }
   | { state: 'authenticated'; user: User };
 
+type UpdateData = {
+    displayName?: string;
+    photoURL?: string;
+}
+
 // Define the shape of the authentication context
 interface AuthContextType {
   user: User | null;
@@ -41,6 +46,7 @@ interface AuthContextType {
   signInWithTikTok: () => Promise<void>;
   signInWithCustomToken: (token: string) => Promise<void>;
   signInWithPhone: (phoneNumber: string) => Promise<ConfirmationResult | null>;
+  updateUserProfile: (data: UpdateData) => Promise<void>;
   triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
@@ -62,6 +68,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const triggerSync = useCallback(() => {
     setSyncTrigger(count => count + 1);
+  }, []);
+
+  const forceUserUpdate = useCallback(() => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      // By creating a new object, we ensure React detects the state change.
+      setAuthState({ state: 'authenticated', user: { ...currentUser } });
+    }
   }, []);
 
   useEffect(() => {
@@ -174,7 +188,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
-        // After getting the confirmation result, we can pre-emptively create/update a user profile.
         const originalOnAuthStateChanged = auth.onAuthStateChanged;
         auth.onAuthStateChanged = async function(user) {
             originalOnAuthStateChanged(user);
@@ -182,8 +195,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             if (user && !user.displayName) {
                 try {
                     await updateProfile(user, { displayName: 'New User' });
-                    // Manually update our authState to trigger re-render
-                    setAuthState({ state: 'authenticated', user });
+                    forceUserUpdate(); // Force a re-render with the updated user object.
                 } catch (updateError) {
                     console.error("Failed to update profile for new phone user:", updateError);
                 }
@@ -192,7 +204,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         return confirmationResult;
 
-    } catch (error: any) {
+    } catch (error: any)
+     {
         console.error("SMS sign-in error:", error);
         toast.error("Failed to Send Code", {
             description: error.message || "An unknown error occurred."
@@ -205,6 +218,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateUserProfile = async (data: UpdateData) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        throw new Error("No user is currently signed in.");
+    }
+    try {
+        await updateProfile(currentUser, data);
+        // Force a state update to make the UI reactive.
+        // onAuthStateChanged does not fire for profile updates.
+        forceUserUpdate();
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
+  };
+
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
     authState,
@@ -214,6 +243,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithTikTok,
     signInWithCustomToken,
     signInWithPhone,
+    updateUserProfile,
     triggerSync, // Expose the trigger
   };
 
@@ -232,3 +262,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

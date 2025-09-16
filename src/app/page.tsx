@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2, Phone } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2, Phone, Save } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -99,14 +99,14 @@ const WelcomeMessage = ({ user }: { user: any }) => {
   if (user) {
     const displayName = user.displayName;
     const firstName = displayName?.split(' ')[0] || '';
-    if (firstName) {
+    if (firstName && firstName !== 'New') {
         return (
           <div className="text-center text-lg font-semibold p-2">
             Hello, {firstName}
           </div>
         );
     }
-    return (
+     return (
         <div className="text-center text-lg font-semibold p-2">
             Hello!
         </div>
@@ -260,6 +260,46 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
     )
 }
 
+function UpdateProfileForm() {
+    const { user, updateUserProfile } = useAuth();
+    const [displayName, setDisplayName] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        if (!displayName.trim()) {
+            toast.error("Please enter a name.");
+            return;
+        }
+        setIsSaving(true);
+        try {
+            await updateUserProfile({ displayName: displayName.trim() });
+            toast.success("Profile updated!");
+        } catch (error: any) {
+            toast.error("Failed to update profile", { description: error.message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="p-4 bg-card rounded-2xl shadow-md space-y-3">
+            <p className="text-sm font-medium text-center">Welcome! Let's set up your profile.</p>
+            <div className="flex items-center gap-2">
+                <Input 
+                    placeholder="Enter your name" 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                    disabled={isSaving}
+                />
+                <Button size="icon" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? <LoaderCircle className="animate-spin" /> : <Save size={18} />}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 function PageContent() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -285,6 +325,9 @@ function PageContent() {
   const { user, signOut, authState, signInWithGoogle, signInWithFacebook, signInWithTikTok, signInWithCustomToken } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
+
+  // Determine if the profile update form should be shown
+  const showProfileForm = user && (!user.displayName || user.displayName === 'New User');
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -626,13 +669,15 @@ useEffect(() => {
       setOpenMobile(false);
       setIsPhoneAuthOpen(false);
       // After a short delay to allow the sidebar to close, focus the textarea.
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 300); // 300ms matches the default sheet animation duration
+      if (!showProfileForm) {
+        setTimeout(() => {
+          textareaRef.current?.focus();
+        }, 300); // 300ms matches the default sheet animation duration
+      }
     }
     // Update the ref to the current user for the next render.
     prevUserRef.current = user;
-  }, [user, setOpenMobile]);
+  }, [user, setOpenMobile, showProfileForm]);
 
   // Handle TikTok custom token sign-in
   useEffect(() => {
@@ -964,11 +1009,16 @@ useEffect(() => {
         <ScrollArea 
             className={cn(
                 "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
-                hasStarted ? "opacity-100" : "opacity-0"
+                hasStarted || showProfileForm ? "opacity-100" : "opacity-0"
             )} 
             viewportRef={scrollAreaViewportRef}
         >
           <div className="flex flex-col gap-6 pb-48 pt-16">
+            {showProfileForm && (
+              <div className="flex justify-center">
+                  <UpdateProfileForm />
+              </div>
+            )}
             {translationHistory.map(renderHistoryItem)}
 
             {isLoading && !editingItemId && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
@@ -981,27 +1031,29 @@ useEffect(() => {
 
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            hasStarted ? "bottom-0" : "top-1/2 -translate-y-1/2",
-            !hasStarted && "flex items-center justify-center"
+            (hasStarted || showProfileForm) ? "bottom-0" : "top-1/2 -translate-y-1/2",
+            !(hasStarted || showProfileForm) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} />
+                {!showProfileForm && <WelcomeMessage user={user} />}
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
                         <p>{debugRedirectUri}</p>
                     </div>
                 )}
-                <InputArea
-                    textareaRef={textareaRef}
-                    inputText={inputText}
-                    setInputText={setInputText}
-                    isLoading={isLoading}
-                    isEditing={editingItemId !== null}
-                    isShaking={isShaking}
-                    onTranslate={() => handleTranslate(inputText)}
-                    onCancel={handleCancel}
-                />
+                {!showProfileForm && (
+                  <InputArea
+                      textareaRef={textareaRef}
+                      inputText={inputText}
+                      setInputText={setInputText}
+                      isLoading={isLoading}
+                      isEditing={editingItemId !== null}
+                      isShaking={isShaking}
+                      onTranslate={() => handleTranslate(inputText)}
+                      onCancel={handleCancel}
+                  />
+                )}
             </div>
         </div>
         
@@ -1117,3 +1169,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
