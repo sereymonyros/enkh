@@ -907,7 +907,7 @@ useEffect(() => {
                </div>
                
             </div>
-             <div className="bg-card rounded-tr-2xl rounded-b-2xl p-3">
+             <div className="p-3">
                 <p className="text-lg">{item.translatedText}</p>
             </div>
           </div>
@@ -951,6 +951,7 @@ useEffect(() => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="text-blue-400"
                           >
                             <TikTokIcon className="h-5 w-5" />
                           </Button>
