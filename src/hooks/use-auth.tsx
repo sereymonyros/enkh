@@ -140,7 +140,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await signInWithPopup(auth, provider);
       // onAuthStateChanged will handle the success case
     } catch (error: any) {
-      console.error("Sign-in error:", error);
        if (error.code === 'auth/popup-closed-by-user') {
         toast.info("Sign-in cancelled", {
           description: "The sign-in window was closed before completion."
@@ -150,6 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           description: 'An account already exists with this email. Please sign in with the original method.'
         });
       } else {
+        console.error("Sign-in error:", error);
         toast.error("Sign-In Failed", {
           description: error.message || "Could not complete the sign-in process."
         });
@@ -239,9 +239,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // After linking, force a reload of the user to get the updated profile info
         await forceUserUpdate();
     } catch (error: any) {
-        console.error("Error linking account:", error);
-        // Re-throw the error to be handled by the component
-        throw error;
+        if (error.code === 'auth/popup-closed-by-user') {
+            // This is not a critical error, just the user cancelling.
+            toast.info("Connection cancelled", {
+                description: "The connection window was closed before completion."
+            });
+        } else {
+            console.error("Error linking account:", error);
+            // Re-throw the error to be handled by the component
+            throw error;
+        }
     }
   };
 
