@@ -260,42 +260,56 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
     )
 }
 
-function UpdateProfileForm() {
-    const { user, updateUserProfile } = useAuth();
-    const [displayName, setDisplayName] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
+function ProfileEnhancementForm() {
+    const { linkWithGoogle, linkWithFacebook } = useAuth();
+    const [isLinking, setIsLinking] = useState(false);
 
-    const handleSave = async () => {
-        if (!displayName.trim()) {
-            toast.error("Please enter a name.");
-            return;
-        }
-        setIsSaving(true);
+    const handleLink = async (provider: 'google' | 'facebook') => {
+        setIsLinking(true);
         try {
-            await updateUserProfile({ displayName: displayName.trim() });
+            if (provider === 'google') {
+                await linkWithGoogle();
+            } else {
+                await linkWithFacebook();
+            }
             toast.success("Profile updated!");
+            // The auth listener will update the user state, causing this component to unmount.
         } catch (error: any) {
-            toast.error("Failed to update profile", { description: error.message });
+            console.error(`Failed to link with ${provider}:`, error);
+            if (error.code === 'auth/credential-already-in-use') {
+                 toast.error("Account Already Exists", { description: "This social account is already linked to another user."});
+            } else {
+                toast.error("Failed to link account", { description: error.message });
+            }
         } finally {
-            setIsSaving(false);
+            setIsLinking(false);
         }
     };
 
     return (
-        <div className="p-4 bg-card rounded-2xl shadow-md space-y-3">
-            <p className="text-sm font-medium text-center">Welcome! Let's set up your profile.</p>
-            <div className="flex items-center gap-2">
-                <Input 
-                    placeholder="Enter your name" 
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                    disabled={isSaving}
-                />
-                <Button size="icon" onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? <LoaderCircle className="animate-spin" /> : <Save size={18} />}
+        <div className="p-4 bg-card rounded-2xl shadow-md space-y-3 text-center">
+            <p className="text-sm font-medium">Welcome! Complete your profile in one click.</p>
+            <div className="flex justify-center items-center gap-4">
+                <Button 
+                    onClick={() => handleLink('google')} 
+                    disabled={isLinking}
+                    variant="outline"
+                    className="flex-1"
+                >
+                    {isLinking ? <LoaderCircle className="animate-spin mr-2" /> : <GoogleIcon className="h-5 w-5 mr-2" />}
+                    Connect Google
+                </Button>
+                <Button 
+                    onClick={() => handleLink('facebook')} 
+                    disabled={isLinking}
+                    variant="outline"
+                    className="flex-1"
+                >
+                    {isLinking ? <LoaderCircle className="animate-spin mr-2" /> : <FacebookIcon className="h-5 w-5 mr-2" />}
+                    Connect Facebook
                 </Button>
             </div>
+             <p className="text-xs text-muted-foreground pt-2">Connect a social account to automatically add your name and photo.</p>
         </div>
     );
 }
@@ -326,8 +340,9 @@ function PageContent() {
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
-  // Determine if the profile update form should be shown
-  const showProfileForm = user && (!user.displayName || user.displayName === 'New User');
+  // Determine if the profile enhancement form should be shown.
+  // It appears if a user is logged in but has no display name.
+  const showProfileForm = user && !user.displayName;
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -907,7 +922,7 @@ useEffect(() => {
                </div>
                
             </div>
-             <div className="p-3">
+             <div className="p-3 bg-transparent">
                 <p className="text-lg">{item.translatedText}</p>
             </div>
           </div>
@@ -947,7 +962,15 @@ useEffect(() => {
                         >
                           <GoogleIcon className="h-5 w-5" />
                         </Button>
-                        <a href="/auth/tiktok/redirect">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-blue-400"
+                          onClick={signInWithFacebook}
+                        >
+                          <FacebookIcon className="h-5 w-5" />
+                        </Button>
+                        <a href="/auth/tiktok/redirect" className="hidden">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1012,7 +1035,7 @@ useEffect(() => {
           <div className="flex flex-col gap-6 pb-48 pt-16">
             {showProfileForm && (
               <div className="flex justify-center">
-                  <UpdateProfileForm />
+                  <ProfileEnhancementForm />
               </div>
             )}
             {translationHistory.map(renderHistoryItem)}
@@ -1165,5 +1188,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     

@@ -22,6 +22,8 @@ import {
   signInWithPhoneNumber,
   ConfirmationResult,
   updateProfile,
+  linkWithPopup,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -47,6 +49,8 @@ interface AuthContextType {
   signInWithCustomToken: (token: string) => Promise<void>;
   signInWithPhone: (phoneNumber: string) => Promise<ConfirmationResult | null>;
   updateUserProfile: (data: UpdateData) => Promise<void>;
+  linkWithGoogle: () => Promise<void>;
+  linkWithFacebook: () => Promise<void>;
   triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
@@ -70,17 +74,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setSyncTrigger(count => count + 1);
   }, []);
 
-  const forceUserUpdate = useCallback(() => {
+  const forceUserUpdate = useCallback(async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
-      // By creating a new object, we ensure React detects the state change.
-      setAuthState({ state: 'authenticated', user: { ...currentUser } });
+      // Reload the user to get the latest profile data from Firebase servers.
+      await currentUser.reload();
+      // Use the reloaded user object to ensure the state update has the latest data.
+      setAuthState({ state: 'authenticated', user: { ...auth.currentUser! } });
     }
   }, []);
 
   useEffect(() => {
     const handleRedirect = async () => {
       try {
+        // Use signInWithRedirect for initial sign-ins
         const result = await getRedirectResult(auth);
         if (result) {
           const user = result.user;
@@ -129,7 +136,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
     try {
-      await signInWithRedirect(auth, provider);
+      // For a clean sign-in, use a popup. Redirect can be confusing for users.
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the success case
     } catch (error: any) {
       console.error("Sign-in error:", error);
        if (error.code === 'auth/popup-closed-by-user') {
@@ -188,20 +197,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
         
-        const originalOnAuthStateChanged = auth.onAuthStateChanged;
-        auth.onAuthStateChanged = async function(user) {
-            originalOnAuthStateChanged(user);
-            auth.onAuthStateChanged = originalOnAuthStateChanged;
-            if (user && !user.displayName) {
-                try {
-                    await updateProfile(user, { displayName: 'New User' });
-                    forceUserUpdate(); // Force a re-render with the updated user object.
-                } catch (updateError) {
-                    console.error("Failed to update profile for new phone user:", updateError);
-                }
-            }
-        };
-
         return confirmationResult;
 
     } catch (error: any)
@@ -234,6 +229,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const linkWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        throw new Error("No user is currently signed in to link an account.");
+    }
+    try {
+        await linkWithPopup(currentUser, provider);
+        // After linking, force a reload of the user to get the updated profile info
+        await forceUserUpdate();
+    } catch (error: any) {
+        console.error("Error linking account:", error);
+        // Re-throw the error to be handled by the component
+        throw error;
+    }
+  };
+
+  const linkWithGoogle = () => linkWithProvider(new GoogleAuthProvider());
+  const linkWithFacebook = () => linkWithProvider(new FacebookAuthProvider());
+
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
     authState,
@@ -244,6 +258,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithCustomToken,
     signInWithPhone,
     updateUserProfile,
+    linkWithGoogle,
+    linkWithFacebook,
     triggerSync, // Expose the trigger
   };
 
