@@ -21,6 +21,7 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -160,22 +161,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithPhone = async (phoneNumber: string): Promise<ConfirmationResult | null> => {
     try {
-        // Initialize reCAPTCHA verifier if it hasn't been already.
-        // The 'recaptcha-container' ID must exist in your JSX.
         if (!recaptchaVerifier) {
             recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
                 'size': 'invisible',
                 'callback': (response: any) => {
-                    // reCAPTCHA solved, you can proceed with phone sign-in.
                 },
                 'expired-callback': () => {
-                   // Response expired. Ask user to solve reCAPTCHA again.
                    toast.error("reCAPTCHA expired. Please try again.");
                 }
             });
         }
         
         const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        
+        // After getting the confirmation result, we can pre-emptively create/update a user profile.
+        const originalOnAuthStateChanged = auth.onAuthStateChanged;
+        auth.onAuthStateChanged = async function(user) {
+            originalOnAuthStateChanged(user);
+            auth.onAuthStateChanged = originalOnAuthStateChanged;
+            if (user && !user.displayName) {
+                try {
+                    await updateProfile(user, { displayName: 'New User' });
+                    // Manually update our authState to trigger re-render
+                    setAuthState({ state: 'authenticated', user });
+                } catch (updateError) {
+                    console.error("Failed to update profile for new phone user:", updateError);
+                }
+            }
+        };
+
         return confirmationResult;
 
     } catch (error: any) {
@@ -183,7 +197,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         toast.error("Failed to Send Code", {
             description: error.message || "An unknown error occurred."
         });
-        // Reset the verifier on error
         if (recaptchaVerifier) {
             recaptchaVerifier.clear();
             recaptchaVerifier = null;
@@ -219,5 +232,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    

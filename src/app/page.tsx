@@ -96,13 +96,21 @@ const WelcomeMessage = ({ user }: { user: any }) => {
     return null;
   }
   
-  if (user && user.displayName) {
-    const firstName = user.displayName.split(' ')[0];
+  if (user) {
+    const displayName = user.displayName;
+    const firstName = displayName?.split(' ')[0] || '';
+    if (firstName) {
+        return (
+          <div className="text-center text-lg font-semibold p-2">
+            Hello, {firstName}
+          </div>
+        );
+    }
     return (
-      <div className="text-center text-lg font-semibold p-2">
-        Hello, {firstName}
-      </div>
-    );
+        <div className="text-center text-lg font-semibold p-2">
+            Hello!
+        </div>
+    )
   }
 
   return (
@@ -183,7 +191,7 @@ const InputArea = ({
 );
 
 function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
-    const [phoneNumber, setPhoneNumber] = useState('4253368994');
+    const [phoneNumber, setPhoneNumber] = useState('+14253368994');
     const [code, setCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [isSendingCode, setIsSendingCode] = useState(false);
@@ -1109,5 +1117,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
