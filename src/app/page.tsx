@@ -825,13 +825,14 @@ useEffect(() => {
                     >
                       <FacebookIcon className="h-5 w-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={signInWithTikTok}
-                    >
-                      <TikTokIcon className="h-5 w-5" />
-                    </Button>
+                    <a href="/auth/tiktok/redirect">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <TikTokIcon className="h-5 w-5" />
+                      </Button>
+                    </a>
                   </>
                 )}
               </div>
@@ -1016,6 +1017,7 @@ export default function Home() {
     
 
     
+
 
 
 

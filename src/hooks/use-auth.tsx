@@ -130,35 +130,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithFacebook = () => signInWithProvider(new FacebookAuthProvider());
   
   const signInWithTikTok = async () => {
-    const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
-    if (!clientKey) {
-      toast.error("TikTok login is not configured.", {
-        description: "The TikTok client key is missing.",
-      });
-      return;
-    }
-    
-    // Generate a random string for the state parameter for security (CSRF protection)
-    const state = Math.random().toString(36).substring(2);
-    // Store the state in sessionStorage to verify it on callback
-    sessionStorage.setItem('tiktok_auth_state', state);
-
-    const scope = 'user.info.basic';
-    const redirectUri = `${window.location.origin}/auth/tiktok/callback`;
-    
-    // Store for debugging in the UI
-    sessionStorage.setItem('debug_tiktok_redirect_uri', redirectUri);
-    console.log('TikTok redirect URI:', redirectUri);
-
-    const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize');
-    authUrl.searchParams.append('client_key', clientKey);
-    authUrl.searchParams.append('scope', scope);
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('state', state);
-
-    // Redirect the user to the TikTok authorization page using a full-page redirect
-    window.location.href = authUrl.toString();
+    // This function is now a placeholder as the redirect is handled by a direct link.
+    // The logic has been moved to /auth/tiktok/redirect/route.ts
+    // We keep the function here to avoid breaking the useAuth hook contract.
+    console.log("Initiating TikTok sign-in via server-side redirect...");
   };
 
   const signInWithCustomToken = useCallback(async (token: string) => {
