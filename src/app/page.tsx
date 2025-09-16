@@ -615,6 +615,7 @@ useEffect(() => {
     // When the user logs in, close the sidebar.
     if (!prevUserRef.current && user) {
       setOpenMobile(false);
+      setIsPhoneAuthOpen(false);
       // After a short delay to allow the sidebar to close, focus the textarea.
       setTimeout(() => {
         textareaRef.current?.focus();
@@ -883,8 +884,7 @@ useEffect(() => {
                   </button>
                 ) : (
                   <>
-                    {!isPhoneAuthOpen && (
-                      <>
+                    <div className={cn("w-full", isPhoneAuthOpen ? "hidden" : "flex flex-col items-center gap-2")}>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -914,13 +914,12 @@ useEffect(() => {
                         >
                           <PhoneIcon className="h-5 w-5" />
                         </Button>
-                      </>
-                    )}
+                    </div>
                     {isPhoneAuthOpen && (
                         <div className="w-full px-2">
                            <PhoneAuthForm />
                            <Button variant="link" size="sm" className="w-full mt-2" onClick={() => setIsPhoneAuthOpen(false)}>
-                                Back to other sign-in options
+                                Back to other options
                            </Button>
                         </div>
                     )}
@@ -1100,3 +1099,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
