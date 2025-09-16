@@ -182,8 +182,8 @@ const InputArea = ({
   </div>
 );
 
-function PhoneAuthForm() {
-    const [phoneNumber, setPhoneNumber] = useState('');
+function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
+    const [phoneNumber, setPhoneNumber] = useState('4253368994');
     const [code, setCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [isSendingCode, setIsSendingCode] = useState(false);
@@ -212,6 +212,7 @@ function PhoneAuthForm() {
             await confirmationResult.confirm(code);
             // The onAuthStateChanged listener will handle the successful sign-in.
             toast.success("Signed in successfully!");
+            onSignIn(); // Close the sheet on successful sign-in
         } catch (error: any) {
             toast.error("Verification Failed", { description: error.message || "Invalid code. Please try again." });
         }
@@ -884,7 +885,7 @@ useEffect(() => {
                   </button>
                 ) : (
                   <>
-                    <div className={cn("w-full", isPhoneAuthOpen ? "hidden" : "flex flex-col items-center gap-2")}>
+                    <div className="flex flex-col items-center gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -915,14 +916,6 @@ useEffect(() => {
                           <PhoneIcon className="h-5 w-5" />
                         </Button>
                     </div>
-                    {isPhoneAuthOpen && (
-                        <div className="w-full px-2">
-                           <PhoneAuthForm />
-                           <Button variant="link" size="sm" className="w-full mt-2" onClick={() => setIsPhoneAuthOpen(false)}>
-                                Back to other options
-                           </Button>
-                        </div>
-                    )}
                   </>
                 )}
               </div>
@@ -1085,6 +1078,23 @@ setIsFeedbackOpen(false);
                 </div>
             </ScrollArea>
           </SheetContent>
+        </Sheet>
+        <Sheet open={isPhoneAuthOpen} onOpenChange={setIsPhoneAuthOpen}>
+            <SheetContent
+                side="bottom"
+                className="bg-muted text-card-foreground h-auto w-full rounded-t-2xl border-t p-4 shadow-lg sm:max-w-lg sm:mx-auto"
+                onInteractOutside={() => setIsPhoneAuthOpen(false)}
+            >
+                <SheetHeader>
+                    <SheetTitle>Sign In with Phone</SheetTitle>
+                    <SheetDescription>
+                        Enter your phone number to receive a verification code.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="py-4">
+                    <PhoneAuthForm onSignIn={() => setIsPhoneAuthOpen(false)} />
+                </div>
+            </SheetContent>
         </Sheet>
       </div>
   );
