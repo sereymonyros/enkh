@@ -1050,18 +1050,18 @@ useEffect(() => {
 
         <div className={cn(
             "fixed left-0 right-0 z-10 transition-all duration-500 ease-in-out",
-            (hasStarted || showProfileForm) ? "bottom-0" : "top-1/2 -translate-y-1/2",
-            !(hasStarted || showProfileForm) && "flex items-center justify-center"
+            (hasStarted) ? "bottom-0" : "top-1/2 -translate-y-1/2",
+            !(hasStarted) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                {!showProfileForm && <WelcomeMessage user={user} />}
+                <WelcomeMessage user={user} />
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
                         <p>{debugRedirectUri}</p>
                     </div>
                 )}
-                {!showProfileForm && (
+                
                   <InputArea
                       textareaRef={textareaRef}
                       inputText={inputText}
@@ -1072,7 +1072,7 @@ useEffect(() => {
                       onTranslate={() => handleTranslate(inputText)}
                       onCancel={handleCancel}
                   />
-                )}
+                
             </div>
         </div>
         
@@ -1188,6 +1188,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
