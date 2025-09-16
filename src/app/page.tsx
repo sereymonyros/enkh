@@ -938,7 +938,7 @@ useEffect(() => {
                   </button>
                 ) : (
                   <>
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-12">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -947,15 +947,7 @@ useEffect(() => {
                         >
                           <GoogleIcon className="h-5 w-5" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={signInWithFacebook}
-                          className="hidden"
-                        >
-                          <FacebookIcon className="h-5 w-5" />
-                        </Button>
-                        <a href="/auth/tiktok/redirect" className="hidden">
+                        <a href="/auth/tiktok/redirect">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1172,7 +1164,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    

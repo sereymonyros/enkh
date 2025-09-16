@@ -1,9 +1,11 @@
+'use server';
 import { config } from 'dotenv';
 config();
 
 import '@/ai/flows/translate-text.ts';
 import '@/ai/flows/detect-language.ts';
 import '@/ai/flows/clear-translations.ts';
+import is dev';
 import '@/ai/flows/save-history.ts';
 import '@/ai/flows/get-history.ts';
 import '@/ai/flows/tiktok-auth.ts';
