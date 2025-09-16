@@ -19,6 +19,7 @@ import {
   getRedirectResult,
   signInWithRedirect,
   signInWithCustomToken as firebaseSignInWithCustomToken,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -106,6 +107,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const signInWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+       if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("Sign-in cancelled", {
+          description: "The sign-in window was closed before completion."
+        });
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error("Sign-In Failed", {
+          description: 'An account already exists with this email. Please sign in with the original method.'
+        });
+      } else {
+        toast.error("Sign-In Failed", {
+          description: error.message || "Could not complete the sign-in process."
+        });
+      }
+    }
+  };
+
+  const signInWithGoggleProvider = async (provider: GoogleAuthProvider) => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Sign-in error:", error);
+       if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("Sign-in cancelled", {
+          description: "The sign-in window was closed before completion."
+        });
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error("Sign-In Failed", {
+          description: 'An account already exists with this email. Please sign in with the original method.'
+        });
+      } else {
+        toast.error("Sign-In Failed", {
+          description: error.message || "Could not complete the sign-in process."
+        });
+      }
+    }
+  };
+
+  const signInWithFacebookProvider = async (provider: FacebookAuthProvider) => {
     try {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
