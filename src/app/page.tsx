@@ -276,11 +276,7 @@ function ProfileEnhancementForm() {
             // The auth listener will update the user state, causing this component to unmount.
         } catch (error: any) {
             console.error(`Failed to link with ${provider}:`, error);
-            if (error.code === 'auth/credential-already-in-use') {
-                 toast.error("Account Already Exists", { description: "This social account is already linked to another user."});
-            } else {
-                toast.error("Failed to link account", { description: error.message });
-            }
+            // Error toast is handled in the useAuth hook, no need to duplicate here.
         } finally {
             setIsLinking(false);
         }

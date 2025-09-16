@@ -244,6 +244,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             toast.info("Connection cancelled", {
                 description: "The connection window was closed before completion."
             });
+        } else if (error.code === 'auth/credential-already-in-use') {
+            toast.error("Account Already Exists", { description: "This social account is already linked to another user. Please sign in with that social account directly."});
         } else {
             console.error("Error linking account:", error);
             // Re-throw the error to be handled by the component
