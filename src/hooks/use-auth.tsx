@@ -18,6 +18,9 @@ import {
   getRedirectResult,
   signInWithRedirect,
   signInWithCustomToken as firebaseSignInWithCustomToken,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -36,6 +39,7 @@ interface AuthContextType {
   signInWithFacebook: () => Promise<void>;
   signInWithTikTok: () => Promise<void>;
   signInWithCustomToken: (token: string) => Promise<void>;
+  signInWithPhone: (phoneNumber: string) => Promise<ConfirmationResult | null>;
   triggerSync: () => void; // Add this to allow manual sync trigger
 }
 
@@ -46,6 +50,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+// A global RecaptchaVerifier instance.
+// It's important to have only one instance that can be reused.
+let recaptchaVerifier: RecaptchaVerifier | null = null;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({ state: 'loading' });
@@ -150,6 +158,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [triggerSync]);
 
+  const signInWithPhone = async (phoneNumber: string): Promise<ConfirmationResult | null> => {
+    try {
+        // Initialize reCAPTCHA verifier if it hasn't been already.
+        // The 'recaptcha-container' ID must exist in your JSX.
+        if (!recaptchaVerifier) {
+            recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response: any) => {
+                    // reCAPTCHA solved, you can proceed with phone sign-in.
+                },
+                'expired-callback': () => {
+                   // Response expired. Ask user to solve reCAPTCHA again.
+                   toast.error("reCAPTCHA expired. Please try again.");
+                }
+            });
+        }
+        
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+        return confirmationResult;
+
+    } catch (error: any) {
+        console.error("SMS sign-in error:", error);
+        toast.error("Failed to Send Code", {
+            description: error.message || "An unknown error occurred."
+        });
+        // Reset the verifier on error
+        if (recaptchaVerifier) {
+            recaptchaVerifier.clear();
+            recaptchaVerifier = null;
+        }
+        return null;
+    }
+  };
+
   const value = {
     user: authState.state === 'authenticated' ? authState.user : null,
     authState,
@@ -158,6 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signInWithFacebook,
     signInWithTikTok,
     signInWithCustomToken,
+    signInWithPhone,
     triggerSync, // Expose the trigger
   };
 

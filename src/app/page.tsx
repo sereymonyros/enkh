@@ -1,15 +1,15 @@
 
-
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2 } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2, Phone } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
 import { getTranslationFromDb, saveTranslationToDb, getHistoryForUser, HistoryEntry, mergeFirestoreHistory, clearHistoryForUser } from '@/lib/db';
 import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
@@ -49,6 +49,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
+import { PhoneIcon } from '@/components/icons/phone-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +63,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { getHistory } from '@/ai/flows/get-history';
 import { TikTokIcon } from '@/components/icons/tiktok-icon';
+import type { ConfirmationResult } from 'firebase/auth';
 
 
 // Define a type for a single history entry
@@ -180,6 +182,74 @@ const InputArea = ({
   </div>
 );
 
+function PhoneAuthForm() {
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [code, setCode] = useState('');
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [isSendingCode, setIsSendingCode] = useState(false);
+    const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+
+    const { signInWithPhone } = useAuth();
+    
+    const handleSendCode = async () => {
+        if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
+            toast.error("Invalid Phone Number", { description: "Please enter in E.164 format (e.g., +85512345678)." });
+            return;
+        }
+        setIsSendingCode(true);
+        const result = await signInWithPhone(phoneNumber);
+        if (result) {
+            setConfirmationResult(result);
+            toast.success("Verification code sent!");
+        }
+        setIsSendingCode(false);
+    };
+
+    const handleVerifyCode = async () => {
+        if (!confirmationResult) return;
+        setIsVerifyingCode(true);
+        try {
+            await confirmationResult.confirm(code);
+            // The onAuthStateChanged listener will handle the successful sign-in.
+            toast.success("Signed in successfully!");
+        } catch (error: any) {
+            toast.error("Verification Failed", { description: error.message || "Invalid code. Please try again." });
+        }
+        setIsVerifyingCode(false);
+    };
+
+    if (confirmationResult) {
+        return (
+            <div className="flex flex-col gap-2">
+                <Input 
+                    type="text" 
+                    placeholder="Verification Code" 
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    disabled={isVerifyingCode}
+                />
+                <Button onClick={handleVerifyCode} disabled={isVerifyingCode}>
+                    {isVerifyingCode ? <LoaderCircle className="animate-spin" /> : "Verify & Sign In"}
+                </Button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex flex-col gap-2">
+            <Input 
+                type="tel" 
+                placeholder="+85512345678" 
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                disabled={isSendingCode}
+            />
+            <Button onClick={handleSendCode} disabled={isSendingCode}>
+                {isSendingCode ? <LoaderCircle className="animate-spin" /> : "Send Code"}
+            </Button>
+        </div>
+    )
+}
 
 function PageContent() {
   const [inputText, setInputText] = useState('');
@@ -195,6 +265,7 @@ function PageContent() {
   const [isFeedbackListOpen, setIsFeedbackListOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [debugRedirectUri, setDebugRedirectUri] = useState<string | null>(null);
+  const [isPhoneAuthOpen, setIsPhoneAuthOpen] = useState(false);
   
   const scrollAreaViewportRef = useRef<HTMLDivElement>(null);
   const translationRequestRef = useRef<{ isCancelled: boolean }>({ isCancelled: false });
@@ -792,6 +863,7 @@ useEffect(() => {
 
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
+        <div id="recaptcha-container" />
         <CacheWarmer />
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
@@ -811,28 +883,47 @@ useEffect(() => {
                   </button>
                 ) : (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={signInWithGoogle}
-                    >
-                      <GoogleIcon className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={signInWithFacebook}
-                    >
-                      <FacebookIcon className="h-5 w-5" />
-                    </Button>
-                    <a href="/auth/tiktok/redirect">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <TikTokIcon className="h-5 w-5" />
-                      </Button>
-                    </a>
+                    {!isPhoneAuthOpen && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={signInWithGoogle}
+                        >
+                          <GoogleIcon className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={signInWithFacebook}
+                        >
+                          <FacebookIcon className="h-5 w-5" />
+                        </Button>
+                        <a href="/auth/tiktok/redirect">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                          >
+                            <TikTokIcon className="h-5 w-5" />
+                          </Button>
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsPhoneAuthOpen(true)}
+                        >
+                          <PhoneIcon className="h-5 w-5" />
+                        </Button>
+                      </>
+                    )}
+                    {isPhoneAuthOpen && (
+                        <div className="w-full px-2">
+                           <PhoneAuthForm />
+                           <Button variant="link" size="sm" className="w-full mt-2" onClick={() => setIsPhoneAuthOpen(false)}>
+                                Back to other sign-in options
+                           </Button>
+                        </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1009,18 +1100,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-
-
-    
-
-    
-
-
-
-
-
-
-
