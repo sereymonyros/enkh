@@ -191,7 +191,7 @@ const InputArea = ({
 );
 
 function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
-    const [phoneNumber, setPhoneNumber] = useState('+14253368994');
+    const [phoneNumber, setPhoneNumber] = useState('+85512822499');
     const [code, setCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [isSendingCode, setIsSendingCode] = useState(false);
@@ -1164,3 +1164,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
