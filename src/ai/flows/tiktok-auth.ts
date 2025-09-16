@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { adminAuth } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 
 // TikTok API endpoints
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -39,14 +39,16 @@ const tiktokAuthFlow = ai.defineFlow(
     outputSchema: TikTokAuthOutputSchema,
   },
   async ({ code, redirectUri }) => {
+    const adminAuth = getAdminAuth();
+    if (!adminAuth) {
+      throw new Error('Firebase Admin SDK is not initialized.');
+    }
+
     const clientKey = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY;
     const clientSecret = process.env.NEXT_PUBLIC_TIKTOK_CLIENT_SECRET;
 
     if (!clientKey || !clientSecret) {
       throw new Error('TikTok client key or secret is not configured.');
-    }
-    if (!adminAuth) {
-      throw new Error('Firebase Admin SDK is not initialized.');
     }
 
     // 1. Exchange authorization code for an access token

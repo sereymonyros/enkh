@@ -3,21 +3,40 @@
 
 import admin from 'firebase-admin';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  : null;
+function initializeAdmin() {
+  // If the app is already initialized, don't try to initialize it again.
+  if (admin.apps.length > 0) {
+    return;
+  }
 
-if (serviceAccount && !admin.apps.length) {
+  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+  if (!serviceAccountString) {
+    console.error('FIREBASE_SERVICE_ACCOUNT environment variable is not set. Admin SDK cannot be initialized.');
+    return;
+  }
+
   try {
+    const serviceAccount = JSON.parse(serviceAccountString);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
     console.log('Firebase Admin SDK initialized successfully.');
   } catch (error: any) {
-    console.error('Firebase Admin initialization error:', error.message);
+    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT or initialize Firebase Admin SDK:', error.message);
   }
 }
 
-const adminAuth = admin.apps.length ? admin.auth() : null;
+// Call the initialization function.
+initializeAdmin();
 
-export { adminAuth };
+/**
+ * Returns the Firebase Admin Auth instance.
+ * Returns null if the SDK has not been initialized.
+ */
+export function getAdminAuth() {
+  if (admin.apps.length === 0) {
+    return null;
+  }
+  return admin.auth();
+}
