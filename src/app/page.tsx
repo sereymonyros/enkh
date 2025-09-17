@@ -585,6 +585,12 @@ function PageContent() {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    setTranslationHistory([]);
+    setHasStarted(false);
+  };
+
   useEffect(() => {
     seedDatabaseIfNeeded();
     
@@ -955,7 +961,7 @@ useEffect(() => {
             <SidebarHeader>
               <div className="flex flex-col items-center justify-center p-2 gap-2">
                 {authState.state === 'authenticated' && user ? (
-                  <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={signOut}>
+                  <button className="flex items-center justify-center gap-2 focus:outline-none rounded-full" onClick={handleSignOut}>
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={user.photoURL || ''}
@@ -1024,7 +1030,7 @@ useEffect(() => {
             viewportRef={scrollAreaViewportRef}
         >
           <div className="flex flex-col gap-6 pb-48 pt-16">
-            {showProfileForm && (
+            {(showProfileForm && !hasStarted) && (
               <div className="flex justify-center">
                   <ProfileEnhancementForm />
               </div>
