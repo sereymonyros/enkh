@@ -290,19 +290,19 @@ function ProfileEnhancementForm() {
                     onClick={() => handleLink('google')} 
                     disabled={isLinking}
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 flex flex-col h-auto p-2"
                 >
-                    {isLinking ? <LoaderCircle className="animate-spin mr-2" /> : <GoogleIcon className="h-5 w-5 mr-2" />}
-                    Connect Google
+                    {isLinking ? <LoaderCircle className="animate-spin" /> : <GoogleIcon className="h-5 w-5 mb-1" />}
+                    Connect
                 </Button>
                 <Button 
                     onClick={() => handleLink('facebook')} 
                     disabled={isLinking}
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 flex flex-col h-auto p-2"
                 >
-                    {isLinking ? <LoaderCircle className="animate-spin mr-2" /> : <FacebookIcon className="h-5 w-5 mr-2" />}
-                    Connect Facebook
+                    {isLinking ? <LoaderCircle className="animate-spin" /> : <FacebookIcon className="h-5 w-5 mb-1" />}
+                    Connect
                 </Button>
             </div>
         </div>
@@ -1183,6 +1183,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
