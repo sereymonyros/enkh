@@ -118,13 +118,13 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
       <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
         <p>Sign in to save your history</p>
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={signInWithGoogle} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={signInWithGoogle} className="gap-2">
                 <GoogleIcon className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={signInWithFacebook} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={signInWithFacebook} className="gap-2">
                 <FacebookIcon className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="icon" onClick={onPhoneSignInClick} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={onPhoneSignInClick} className="gap-2">
                 <PhoneIcon className="h-5 w-5" />
             </Button>
         </div>
@@ -203,7 +203,7 @@ const InputArea = ({
 );
 
 function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
-    const [phoneNumber, setPhoneNumber] = useState('+85512822499');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [code, setCode] = useState('');
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
     const [isSendingCode, setIsSendingCode] = useState(false);
@@ -212,18 +212,28 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
     const { signInWithPhone } = useAuth();
     
     const handleSendCode = async () => {
-        if (!/^\+[1-9]\d{1,14}$/.test(phoneNumber)) {
-            toast.error("Invalid Phone Number", { description: "Please enter in E.164 format (e.g., +85512345678)." });
+        let processedNumber = phoneNumber.trim();
+
+        // Rule: If starts with 0 and has 9 or 10 digits, convert to +855
+        if (processedNumber.startsWith('0') && (processedNumber.length === 9 || processedNumber.length === 10)) {
+            processedNumber = `+855${processedNumber.substring(1)}`;
+        }
+
+        // Final validation: must be in E.164 format
+        if (!/^\+[1-9]\d{1,14}$/.test(processedNumber)) {
+            toast.error("Invalid Phone Number", { description: "Please use the format '012 345 678' or a full international number like '+1...'" });
             return;
         }
+
         setIsSendingCode(true);
-        const result = await signInWithPhone(phoneNumber);
+        const result = await signInWithPhone(processedNumber);
         if (result) {
             setConfirmationResult(result);
             toast.success("Verification code sent!");
         }
         setIsSendingCode(false);
     };
+
 
     const handleVerifyCode = async () => {
         if (!confirmationResult) return;
@@ -260,7 +270,7 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
         <div className="flex flex-col gap-2">
             <Input 
                 type="tel" 
-                placeholder="+85512345678" 
+                placeholder="012 345 678" 
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 disabled={isSendingCode}
@@ -1169,6 +1179,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
