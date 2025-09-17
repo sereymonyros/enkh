@@ -49,7 +49,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { FacebookIcon } from '@/components/icons/facebook-icon';
-import { PhoneIcon } from '@/components/icons/phone-icon';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -312,53 +311,6 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
             </Button>
         </div>
     )
-}
-
-function ProfileEnhancementForm() {
-    const { linkWithGoogle, linkWithFacebook } = useAuth();
-    const [linkingProvider, setLinkingProvider] = useState<'google' | 'facebook' | null>(null);
-
-    const handleLink = async (provider: 'google' | 'facebook') => {
-        setLinkingProvider(provider);
-        try {
-            if (provider === 'google') {
-                await linkWithGoogle();
-            } else {
-                await linkWithFacebook();
-            }
-            toast.success("Profile updated!");
-        } catch (error: any) {
-            console.error(`Failed to link with ${provider}:`, error);
-        } finally {
-            setLinkingProvider(null);
-        }
-    };
-
-    return (
-        <div className="p-4 rounded-2xl space-y-3 text-center">
-            <p className="text-sm font-medium">Welcome! Complete your profile in one click.</p>
-            <div className="flex justify-center items-center gap-4">
-                <Button 
-                    onClick={() => handleLink('google')} 
-                    disabled={!!linkingProvider}
-                    variant="ghost"
-                    className="flex-1 flex flex-col h-auto p-2"
-                >
-                    {linkingProvider === 'google' ? <LoaderCircle className="animate-spin" /> : <GoogleIcon className="h-5 w-5 mb-1" />}
-                    Connect
-                </Button>
-                <Button 
-                    onClick={() => handleLink('facebook')} 
-                    disabled={!!linkingProvider}
-                    variant="ghost"
-                    className="flex-1 flex flex-col h-auto p-2"
-                >
-                    {linkingProvider === 'facebook' ? <LoaderCircle className="animate-spin" /> : <FacebookIcon className="h-5 w-5 mb-1" />}
-                    Connect
-                </Button>
-            </div>
-        </div>
-    );
 }
 
 function PageContent() {
@@ -1057,16 +1009,11 @@ useEffect(() => {
         <ScrollArea 
             className={cn(
                 "w-full max-w-2xl mx-auto flex-1 px-4 no-scrollbar transition-all duration-500 ease-in-out",
-                hasStarted || showProfileForm ? "opacity-100" : "opacity-0"
+                hasStarted ? "opacity-100" : "opacity-0"
             )} 
             viewportRef={scrollAreaViewportRef}
         >
           <div className="flex flex-col gap-6 pb-48 pt-16">
-            {(showProfileForm && !hasStarted) && (
-              <div className="flex justify-center">
-                  <ProfileEnhancementForm />
-              </div>
-            )}
             {translationHistory.map(renderHistoryItem)}
 
             {isLoading && !editingItemId && (translationHistory.length === 0 || translationHistory[translationHistory.length-1]?.isUser) && (
@@ -1217,5 +1164,7 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
