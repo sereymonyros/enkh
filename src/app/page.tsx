@@ -289,7 +289,7 @@ function ProfileEnhancementForm() {
                 <Button 
                     onClick={() => handleLink('google')} 
                     disabled={isLinking}
-                    variant="outline"
+                    variant="ghost"
                     className="flex-1 flex flex-col h-auto p-2"
                 >
                     {isLinking ? <LoaderCircle className="animate-spin" /> : <GoogleIcon className="h-5 w-5 mb-1" />}
@@ -298,7 +298,7 @@ function ProfileEnhancementForm() {
                 <Button 
                     onClick={() => handleLink('facebook')} 
                     disabled={isLinking}
-                    variant="outline"
+                    variant="ghost"
                     className="flex-1 flex flex-col h-auto p-2"
                 >
                     {isLinking ? <LoaderCircle className="animate-spin" /> : <FacebookIcon className="h-5 w-5 mb-1" />}
