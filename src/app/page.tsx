@@ -98,7 +98,7 @@ const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted, onSignOut }: { u
           duration: 60000,
           classNames: {
             toast: 'bg-card/80 backdrop-blur-sm border-blue-400/50 rounded-xl shadow-lg',
-            title: 'text-card-foreground',
+            title: 'text-card-foreground text-center',
           }
         });
       }, 100); // Small delay to ensure page is ready
@@ -1165,6 +1165,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
