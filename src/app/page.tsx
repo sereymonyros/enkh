@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2, Phone, Save } from 'lucide-react';
+import { Sparkles, Send, Pencil, Check, X, Volume2, Copy, Database, Menu, StopCircle, MessageSquare, List, History, LoaderCircle, Trash2, Phone, Save, ShieldCheck } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { saveHistory } from '@/ai/flows/save-history';
@@ -125,7 +125,7 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
                 <FacebookIcon className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={onPhoneSignInClick} className="gap-2">
-                <MessageSquare className="h-5 w-5" />
+                <ShieldCheck className="h-5 w-5" />
             </Button>
         </div>
       </div>
