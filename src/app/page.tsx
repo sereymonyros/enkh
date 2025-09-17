@@ -262,10 +262,10 @@ function PhoneAuthForm({ onSignIn }: { onSignIn: () => void }) {
 
 function ProfileEnhancementForm() {
     const { linkWithGoogle, linkWithFacebook } = useAuth();
-    const [isLinking, setIsLinking] = useState(false);
+    const [linkingProvider, setLinkingProvider] = useState<'google' | 'facebook' | null>(null);
 
     const handleLink = async (provider: 'google' | 'facebook') => {
-        setIsLinking(true);
+        setLinkingProvider(provider);
         try {
             if (provider === 'google') {
                 await linkWithGoogle();
@@ -273,12 +273,10 @@ function ProfileEnhancementForm() {
                 await linkWithFacebook();
             }
             toast.success("Profile updated!");
-            // The auth listener will update the user state, causing this component to unmount.
         } catch (error: any) {
             console.error(`Failed to link with ${provider}:`, error);
-            // Error toast is handled in the useAuth hook, no need to duplicate here.
         } finally {
-            setIsLinking(false);
+            setLinkingProvider(null);
         }
     };
 
@@ -288,20 +286,20 @@ function ProfileEnhancementForm() {
             <div className="flex justify-center items-center gap-4">
                 <Button 
                     onClick={() => handleLink('google')} 
-                    disabled={isLinking}
+                    disabled={!!linkingProvider}
                     variant="ghost"
                     className="flex-1 flex flex-col h-auto p-2"
                 >
-                    {isLinking ? <LoaderCircle className="animate-spin" /> : <GoogleIcon className="h-5 w-5 mb-1" />}
+                    {linkingProvider === 'google' ? <LoaderCircle className="animate-spin" /> : <GoogleIcon className="h-5 w-5 mb-1" />}
                     Connect
                 </Button>
                 <Button 
                     onClick={() => handleLink('facebook')} 
-                    disabled={isLinking}
+                    disabled={!!linkingProvider}
                     variant="ghost"
                     className="flex-1 flex flex-col h-auto p-2"
                 >
-                    {isLinking ? <LoaderCircle className="animate-spin" /> : <FacebookIcon className="h-5 w-5 mb-1" />}
+                    {linkingProvider === 'facebook' ? <LoaderCircle className="animate-spin" /> : <FacebookIcon className="h-5 w-5 mb-1" />}
                     Connect
                 </Button>
             </div>
@@ -1183,8 +1181,6 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
 
     
 
