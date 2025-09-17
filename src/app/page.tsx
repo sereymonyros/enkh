@@ -85,13 +85,22 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
-const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignInClick: () => void }) => {
+const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, onPhoneSignInClick: () => void, hasStarted: boolean }) => {
   const [isClient, setIsClient] = useState(false);
   const { signInWithGoogle, signInWithFacebook } = useAuth();
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+
+    if (!user && !hasStarted) {
+      const timer = setTimeout(() => {
+        toast('Sign in to save your history', {
+          duration: 60000,
+        });
+      }, 100); // Small delay to ensure page is ready
+      return () => clearTimeout(timer);
+    }
+  }, [user, hasStarted]);
 
   if (!isClient) {
     return null;
@@ -100,7 +109,7 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
   if (user) {
     const displayName = user.displayName;
     const firstName = displayName?.split(' ')[0] || '';
-    if (firstName && firstName !== 'New') {
+    if (firstName && firstName !== 'New' && !hasStarted) {
         return (
           <div className="text-center text-lg font-semibold p-2">
             Hello, {firstName}
@@ -116,7 +125,6 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
 
   return (
       <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
-        <p>Sign in to save your history</p>
         <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={signInWithGoogle} className="gap-2">
                 <GoogleIcon className="h-5 w-5" />
@@ -1051,7 +1059,7 @@ useEffect(() => {
             !(hasStarted) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                {!hasStarted && <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} />}
+                <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} hasStarted={hasStarted} />
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
@@ -1205,5 +1213,8 @@ export default function Home() {
     
 
     
+
+    
+
 
     
