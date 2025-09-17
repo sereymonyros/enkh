@@ -305,7 +305,6 @@ function ProfileEnhancementForm() {
                     Connect Facebook
                 </Button>
             </div>
-             <p className="text-xs text-muted-foreground pt-2">Connect a social account to automatically add your name and photo.</p>
         </div>
     );
 }
@@ -1184,6 +1183,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
