@@ -88,13 +88,14 @@ const normalizeText = (text: string) => {
 const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, onPhoneSignInClick: () => void, hasStarted: boolean }) => {
   const [isClient, setIsClient] = useState(false);
   const { signInWithGoogle, signInWithFacebook } = useAuth();
+  const toastIdRef = useRef<string | number | null>(null);
 
   useEffect(() => {
     setIsClient(true);
 
     if (!user && !hasStarted) {
       const timer = setTimeout(() => {
-        toast('Sign in to save your history', {
+        toastIdRef.current = toast('Sign in to save your history', {
           duration: 60000,
         });
       }, 100); // Small delay to ensure page is ready
@@ -106,10 +107,33 @@ const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, o
     return null;
   }
   
-  if (user) {
+  const dismissToast = () => {
+    if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+        toastIdRef.current = null;
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    dismissToast();
+    signInWithGoogle();
+  };
+
+  const handleFacebookSignIn = () => {
+    dismissToast();
+    signInWithFacebook();
+  };
+  
+  const handlePhoneSignInClick = () => {
+    dismissToast();
+    onPhoneSignInClick();
+  };
+
+
+  if (user && !hasStarted) {
     const displayName = user.displayName;
     const firstName = displayName?.split(' ')[0] || '';
-    if (firstName && firstName !== 'New' && !hasStarted) {
+    if (firstName && firstName !== 'New') {
         return (
           <div className="text-center text-lg font-semibold p-2">
             Hello, {firstName}
@@ -126,13 +150,13 @@ const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, o
   return (
       <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
         <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={signInWithGoogle} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={handleGoogleSignIn} className="gap-2">
                 <GoogleIcon className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={signInWithFacebook} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={handleFacebookSignIn} className="gap-2">
                 <FacebookIcon className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onPhoneSignInClick} className="gap-2">
+            <Button variant="ghost" size="icon" onClick={handlePhoneSignInClick} className="gap-2">
                 <ShieldCheck className="h-5 w-5" />
             </Button>
         </div>
@@ -1193,28 +1217,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
 
     
