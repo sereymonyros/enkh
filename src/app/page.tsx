@@ -125,7 +125,7 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
                 <FacebookIcon className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={onPhoneSignInClick} className="gap-2">
-                <PhoneIcon className="h-5 w-5" />
+                <MessageSquare className="h-5 w-5" />
             </Button>
         </div>
       </div>
