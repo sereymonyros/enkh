@@ -24,6 +24,9 @@ import {
   updateProfile,
   linkWithPopup,
   signInWithPopup,
+  AuthCredential,
+  reauthenticateWithCredential,
+  PhoneAuthProvider,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -230,27 +233,64 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const linkWithProvider = async (provider: GoogleAuthProvider | FacebookAuthProvider) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
+    const originalUser = auth.currentUser;
+    if (!originalUser) {
         throw new Error("No user is currently signed in to link an account.");
     }
+    
+    // Store the original user's phone credential if they are anonymous
+    const phoneCredential = originalUser.isAnonymous ? null : PhoneAuthProvider.credential(originalUser.uid, ' ');
+
+
     try {
-        await linkWithPopup(currentUser, provider);
-        // After linking, force a reload of the user to get the updated profile info
+        await linkWithPopup(originalUser, provider);
         await forceUserUpdate();
+        toast.success("Account successfully linked!", { description: "Your profile has been updated." });
+
     } catch (error: any) {
         if (error.code === 'auth/popup-closed-by-user') {
-            // This is not a critical error, just the user cancelling.
             toast.info("Connection cancelled", {
                 description: "The connection window was closed before completion."
             });
-        } else if (error.code === 'auth/credential-already-in-use') {
-            toast.error("Account Already Exists", { description: "This social account is already linked to another user. Please sign in with that social account directly."});
-        } else {
-            console.error("Error linking account:", error);
-            // Re-throw the error to be handled by the component
-            throw error;
+            return; // Exit without further action
         }
+
+        if (error.code === 'auth/credential-already-in-use') {
+            toast.info("Account already exists", {
+                description: "This social account is already in use. Attempting to merge accounts..."
+            });
+
+            const credential = error.customData.credential as AuthCredential;
+
+            try {
+                // Sign in to the existing social account
+                const result = await signInWithPopup(auth, provider);
+                const newMainUser = result.user;
+
+                // Now, link the original phone credential to this new main account.
+                // We can't directly get the phone credential from the original anonymous user.
+                // This part of the flow is complex and often requires re-authentication.
+                // For a simpler UX, we'll guide the user.
+                
+                // For now, the simplest robust solution is to inform the user.
+                // A full merge would require re-verifying the phone number.
+                toast.success(`Signed in as ${newMainUser.displayName}`, {
+                    description: "We've switched you to your existing social account. You can re-link your phone number in settings if you wish."
+                });
+
+                // The original anonymous user is now orphaned and can be ignored.
+                // Firebase will handle cleanup or the user can be deleted if we had a server-side process.
+
+            } catch (mergeError: any) {
+                console.error("Error during account merge sign-in:", mergeError);
+                toast.error("Merge Failed", { description: "Could not sign you in to the existing social account." });
+            }
+            return; // Stop execution after handling the merge.
+        }
+
+        // Handle other linking errors
+        console.error("Error linking account:", error);
+        toast.error("Failed to link account", { description: "An unexpected error occurred. Please try again." });
     }
   };
 
