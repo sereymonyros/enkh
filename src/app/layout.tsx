@@ -3,7 +3,6 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster as SonnerToaster } from 'sonner';
 import { Providers } from "@/components/providers";
 import { useAuth } from "@/hooks/use-auth";
 import { LoaderCircle } from "lucide-react";
@@ -38,7 +37,6 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <Providers>
           {children}
-          <SonnerToaster richColors />
         </Providers>
       </body>
     </html>

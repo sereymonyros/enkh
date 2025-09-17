@@ -11,7 +11,7 @@ import { getTranslationFromFirestoreCache } from '@/lib/translation-cache';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { toast, Toaster as SonnerToaster } from 'sonner';
 import { seedDatabaseIfNeeded } from '@/lib/seeder';
 import {
   TooltipProvider,
@@ -84,7 +84,7 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
-const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, onPhoneSignInClick: () => void, hasStarted: boolean }) => {
+const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted, onSignOut }: { user: any, onPhoneSignInClick: () => void, hasStarted: boolean, onSignOut: () => void }) => {
   const [isClient, setIsClient] = useState(false);
   const { signInWithGoogle, signInWithFacebook } = useAuth();
   const toastIdRef = useRef<string | number | null>(null);
@@ -96,6 +96,10 @@ const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, o
       const timer = setTimeout(() => {
         toastIdRef.current = toast('Sign in to save your history', {
           duration: 60000,
+          classNames: {
+            toast: 'bg-card/80 backdrop-blur-sm border-blue-400/50 rounded-xl shadow-lg',
+            title: 'text-card-foreground',
+          }
         });
       }, 100); // Small delay to ensure page is ready
       return () => clearTimeout(timer);
@@ -145,6 +149,9 @@ const WelcomeMessage = ({ user, onPhoneSignInClick, hasStarted }: { user: any, o
         </div>
     )
   }
+
+  if (hasStarted) return null;
+
 
   return (
       <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
@@ -338,10 +345,6 @@ function PageContent() {
   const { user, signOut, authState, signInWithCustomToken } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
-
-  // Determine if the profile enhancement form should be shown.
-  // It appears if a user is logged in but has no display name.
-  const showProfileForm = user && !user.displayName;
 
   const scrollToBottom = () => {
     if (scrollAreaViewportRef.current) {
@@ -688,16 +691,13 @@ useEffect(() => {
     if (!prevUserRef.current && user) {
       setOpenMobile(false);
       setIsPhoneAuthOpen(false);
-      // After a short delay to allow the sidebar to close, focus the textarea.
-      if (!showProfileForm) {
-        setTimeout(() => {
-          textareaRef.current?.focus();
-        }, 300); // 300ms matches the default sheet animation duration
-      }
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 300); // 300ms matches the default sheet animation duration
     }
     // Update the ref to the current user for the next render.
     prevUserRef.current = user;
-  }, [user, setOpenMobile, showProfileForm]);
+  }, [user, setOpenMobile]);
 
   // Handle TikTok custom token sign-in
   useEffect(() => {
@@ -939,6 +939,7 @@ useEffect(() => {
   return (
       <div className="min-h-screen w-full bg-background text-foreground flex font-body antialiased">
         <div id="recaptcha-container" />
+        <SonnerToaster position="top-center" richColors />
         <CacheWarmer />
         <Sidebar>
           <div className="flex h-full w-full flex-col border-r-2 border-blue-400">
@@ -1030,7 +1031,7 @@ useEffect(() => {
             !(hasStarted) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} hasStarted={hasStarted} />
+                <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} hasStarted={hasStarted} onSignOut={handleSignOut}/>
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
