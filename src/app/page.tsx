@@ -1045,7 +1045,7 @@ useEffect(() => {
             !(hasStarted) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} />
+                {!hasStarted && <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} />}
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
