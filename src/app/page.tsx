@@ -283,7 +283,7 @@ function ProfileEnhancementForm() {
     };
 
     return (
-        <div className="p-4 bg-card rounded-2xl shadow-md space-y-3 text-center">
+        <div className="p-4 rounded-2xl space-y-3 text-center">
             <p className="text-sm font-medium">Welcome! Complete your profile in one click.</p>
             <div className="flex justify-center items-center gap-4">
                 <Button 
@@ -1183,6 +1183,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
