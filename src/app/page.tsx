@@ -85,8 +85,9 @@ const normalizeText = (text: string) => {
   return text.trim().toLowerCase();
 };
 
-const WelcomeMessage = ({ user }: { user: any }) => {
+const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignInClick: () => void }) => {
   const [isClient, setIsClient] = useState(false);
+  const { signInWithGoogle, signInWithFacebook } = useAuth();
 
   useEffect(() => {
     setIsClient(true);
@@ -114,8 +115,22 @@ const WelcomeMessage = ({ user }: { user: any }) => {
   }
 
   return (
-      <div className="text-center text-lg font-semibold p-2">
-        Sign in to save your history
+      <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
+        <p>Sign in to save your history</p>
+        <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={signInWithGoogle} className="gap-2">
+                <GoogleIcon className="h-5 w-5" />
+                Google
+            </Button>
+            <Button variant="outline" onClick={signInWithFacebook} className="gap-2">
+                <FacebookIcon className="h-5 w-5" />
+                Facebook
+            </Button>
+            <Button variant="outline" onClick={onPhoneSignInClick} className="gap-2">
+                <PhoneIcon className="h-5 w-5" />
+                Phone
+            </Button>
+        </div>
       </div>
   );
 };
@@ -329,7 +344,7 @@ function PageContent() {
 
   const { setServerFeedback } = useFeedbackStore();
   const { setOpenMobile } = useSidebar();
-  const { user, signOut, authState, signInWithGoogle, signInWithFacebook, signInWithTikTok, signInWithCustomToken } = useAuth();
+  const { user, signOut, authState, signInWithCustomToken } = useAuth();
   const [localHistory, setLocalHistory] = useState<HistoryEntry[]>([]);
   const prevUserRef = useRef(user);
 
@@ -956,14 +971,6 @@ useEffect(() => {
                             <TikTokIcon className="h-5 w-5" />
                           </Button>
                         </a>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-blue-400"
-                          onClick={() => setIsPhoneAuthOpen(true)}
-                        >
-                          <PhoneIcon className="h-5 w-5" />
-                        </Button>
                     </div>
                   </>
                 )}
@@ -1031,7 +1038,7 @@ useEffect(() => {
             !(hasStarted) && "flex items-center justify-center"
         )}>
              <div className="w-full pointer-events-auto">
-                <WelcomeMessage user={user} />
+                <WelcomeMessage user={user} onPhoneSignInClick={() => setIsPhoneAuthOpen(true)} />
                 {debugRedirectUri && (
                     <div className="w-full max-w-3xl mx-auto px-4 py-2 text-xs text-center text-muted-foreground bg-muted rounded-md mb-2 break-all">
                         <p className="font-bold">Debug Redirect URI:</p>
@@ -1165,6 +1172,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
