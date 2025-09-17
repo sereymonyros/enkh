@@ -118,17 +118,14 @@ const WelcomeMessage = ({ user, onPhoneSignInClick }: { user: any, onPhoneSignIn
       <div className="text-center text-lg font-semibold p-2 flex flex-col items-center gap-4">
         <p>Sign in to save your history</p>
         <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={signInWithGoogle} className="gap-2">
+            <Button variant="outline" size="icon" onClick={signInWithGoogle} className="gap-2">
                 <GoogleIcon className="h-5 w-5" />
-                Google
             </Button>
-            <Button variant="outline" onClick={signInWithFacebook} className="gap-2">
+            <Button variant="outline" size="icon" onClick={signInWithFacebook} className="gap-2">
                 <FacebookIcon className="h-5 w-5" />
-                Facebook
             </Button>
-            <Button variant="outline" onClick={onPhoneSignInClick} className="gap-2">
+            <Button variant="outline" size="icon" onClick={onPhoneSignInClick} className="gap-2">
                 <PhoneIcon className="h-5 w-5" />
-                Phone
             </Button>
         </div>
       </div>
@@ -1172,6 +1169,8 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    
 
     
 
